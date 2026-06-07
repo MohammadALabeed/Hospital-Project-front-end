@@ -1,0 +1,269 @@
+{
+  "app": {
+    "session": {
+      "verifying": "Verifying HIPAA secure certificates and connecting to hub..."
+    }
+  },
+  "login": {
+    "title": "Unified Medical Portal",
+    "subtitle": "Log in to access secure hospital database and manage patient registries.",
+    "emailLabel": "Professional Email Address",
+    "passwordLabel": "Password",
+    "button": "Secure Sign In",
+    "error": "Authentication failed. Please check your credentials and try again.",
+    "securePortal": "Unified Medical Portal",
+    "sslLabel": "Secure TLS Tunnel Active"
+  },
+  "layout": {
+    "sidebar": {
+      "dashboard": "Dashboard Overview",
+      "patients": "Patients Registry",
+      "appointments": "Appointments Schedule",
+      "medicalRecords": "Medical Records",
+      "systemBrand": "Hospital System",
+      "logout": "Log Out Session"
+    },
+    "roles": {
+      "admin": "Admin",
+      "doctor": "Doctor",
+      "staff": "Staff"
+    },
+    "navbar": {
+      "searchPlaceholder": "Search patients, appointments, or medical charts...",
+      "profileTooltip": "Physician Profile",
+      "statusOnline": "System: Online",
+      "statusOffline": "System: Offline"
+    }
+  },
+  "overview": {
+    "badge": "System Dashboard",
+    "welcome": "Welcome back, Dr. {{name}}",
+    "subtitle": "Welcome back. Access database registries and active outpatient schedules.",
+    "greetings": {
+      "admin": "Hospital Management Console",
+      "clinical": "Clinical Registry Active",
+      "default": "Authorized Personnel Session"
+    },
+    "buttons": {
+      "viewPatients": "Patient Registry",
+      "manageApts": "Appointments Schedule"
+    },
+    "stats": {
+      "icuTitle": "ICU Bed Occupancy",
+      "icuOccupied": "87.5%",
+      "icuTrend": "-1.2% in last 24h",
+      "physiciansTitle": "On-Call Physicians",
+      "physiciansOnCall": "Active Physicians On Call",
+      "physiciansCount": "14 Active",
+      "physiciansNote": "Distributed across emergency wards",
+      "securityTitle": "Database Protection",
+      "securityStatus": "HIPAA Secured",
+      "securityBadge": "Encrypted Channel"
+    },
+    "inspections": {
+      "title": "Upcoming Institutional Inspections & Rotations",
+      "item1": {
+        "title": "Cardiology Staff Briefings Meeting",
+        "location": "Location: Staff Conference Annex A",
+        "time": "Today, 14:00"
+      },
+      "item2": {
+        "title": "Bi-annual Medical Registry Safety Audit",
+        "note": "Routine security validation batch",
+        "status": "Pending Review"
+      },
+      "item3": {
+        "title": "Pediatric Ward Ventilation Refurbishment",
+        "note": "Technician hardware routine inspections",
+        "team": "Facility Maintenance Team 4 assigned",
+        "time": "June 4, 08:00"
+      }
+    },
+    "compliance": {
+      "title": "System Access Compliance",
+      "body1": "In accordance with standard digital health provisions, all user interactions inside patient directories are logged for internal audit logs.",
+      "body2": "Please lock sessions when leaving terminal workstations unattended.",
+      "encryption": "Encryption Protocol:",
+      "sessionType": "Encryption standard:"
+    },
+    "charts": {
+      "title": "Weekly Patient Inflow Traffic",
+      "admissions": "Admissions",
+      "discharges": "Discharges"
+    }
+  },
+  "patients": {
+    "header": {
+      "title": "Patients Registry",
+      "subtitle": "Manage, register, and monitor patient health records and diagnostics.",
+      "registerButton": "Register New Patient"
+    },
+    "notifications": {
+      "registered": "Patient {{name}} successfully registered! ID Assigned: {{id}}"
+    },
+    "errors": {
+      "schemaError": "API returned unexpected patient schema formatting.",
+      "fetchFailed": "Failed to query patients records from central Node.js/SQL hub."
+    },
+    "stats": {
+      "totalLabel": "Total Patients Registry",
+      "totalGrowth": "+12% vs last month",
+      "urgentLabel": "Active Urgent Admissions",
+      "urgentStatus": "High Risk Status",
+      "recoveryLabel": "Average Patient Recovery",
+      "recoveryPeriod": "Monthly Avg",
+      "pendingLabel": "Pending Lab Approvals",
+      "pendingStatus": "Review Needed"
+    },
+    "table": {
+      "directoryTitle": "Patient Verification Directory",
+      "filterButton": "Filter Wards",
+      "exportButton": "Export Records",
+      "loading": "Loading secure SQL Server patient datasets...",
+      "retry": "Retry Database Query",
+      "noResults": "No patients matched search criteria: \"{{term}}\"",
+      "noResultsHint": "Please try searching by name, record ID, or exact blood group.",
+      "yearsCount": "{{count}} yrs",
+      "footerCount": "Showing {{filtered}} of {{total}} authenticated patient profiles",
+      "prev": "Pre",
+      "next": "Next",
+      "cols": {
+        "demographics": "Patient Name / Demographics",
+        "chartId": "Chart ID Number",
+        "ward": "Ward / Specialization",
+        "contact": "Email / Address",
+        "age": "Birth / Age",
+        "vitals": "Vitals State",
+        "action": "Action"
+      }
+    },
+    "status": {
+      "stable": "Stable",
+      "critical": "Critical",
+      "recovering": "Recovering"
+    },
+    "departments": {
+      "general": "General Medicine",
+      "cardiology": "Cardiology",
+      "pediatrics": "Pediatrics",
+      "neurology": "Neurology"
+    },
+    "alerts": {
+      "filter": "Clinic filters: Standard default lookup matches all outpatient wards.",
+      "export": "Preparing raw clinical data directory export... CSV generated with HIPAA privacy compliance hashing.",
+      "activePatient": "Active patient",
+      "secureAudit": "Operation menu for {{name}} pending secure audit."
+    },
+    "analytics": {
+      "title": "Operational Hospital Analytics",
+      "description": "Patient emergency admissions have escalated by 14% this week. Consider reallocating designated emergency coordinators to Wards 4 and 6 during afternoon surge peak ranges (14:00 - 18:00).",
+      "button": "View Security Report"
+    },
+    "tasks": {
+      "title": "Active Support Tasks",
+      "task1": {
+        "title": "Review Lab Diagnostics #9421",
+        "desc": "Patient: Eleanor Mitchell • Dept: Cardiology"
+      },
+      "task2": {
+        "title": "Physician Sign-off Required",
+        "desc": "Discharge files: Ward 402, Robert Jenkins"
+      },
+      "task3": {
+        "title": "Lobby Sanitization Audit",
+        "desc": "Completed by Helen Miller at 09:30"
+      }
+    }
+  },
+  "patientModal": {
+    "title": "Register New Patient Record",
+    "subtitle": "Complete the details below to create a new clinical profile.",
+    "errors": {
+      "requiredFields": "Please populate all required personal and clinical fields.",
+      "saveFailed": "Failed to write patient file to central directory.",
+      "networkError": "Network error connecting to SQL Database coordinator."
+    },
+    "sections": {
+      "account": "Account Credentials (Optional)",
+      "demographics": "Patient Demographics",
+      "medical": "Lab / Hematological Record"
+    },
+    "form": {
+      "usernameLabel": "System Username",
+      "usernamePlaceholder": "e.g. jdoe_med",
+      "passwordLabel": "Default Access Password",
+      "fullNameLabel": "Patient Full Name",
+      "fullNamePlaceholder": "Jonathan Doe",
+      "emailLabel": "Email Address",
+      "dobLabel": "Date of Birth",
+      "addressLabel": "Current Residential Address",
+      "addressPlaceholder": "123 Medical Way, Suite 400, NY 10001",
+      "genderLabel": "Gender",
+      "bloodTypeLabel": "Blood Type",
+      "bloodTypePlaceholder": "Select Blood Type",
+      "department": "Target Medical Department",
+      "status": "Initial Vitals Status"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "other": "Other"
+    },
+    "buttons": {
+      "cancel": "Cancel",
+      "save": "Save Patient Record"
+    }
+  },
+  "appointments": {
+    "title": "Medical Appointments Management",
+    "subtitle": "Schedule and confirm outpatient clinic slots and surgical procedures.",
+    "scheduleButton": "Book New Appointment",
+    "loading": "Loading scheduled appointments from SQL Server...",
+    "noAppointments": "No appointments scheduled for the selected period.",
+    "form": {
+      "title": "Book Appointment",
+      "patientNameLabel": "Patient Full Name",
+      "patientNamePlaceholder": "e.g. Jonathan Doe",
+      "selectDoctorPlaceholder": "Select Assigned Physician",
+      "reasonLabel": "Reason for Visit",
+      "reasonPlaceholder": "Enter reason for visit or symptoms...",
+      "saveButton": "Save Appointment"
+    },
+    "table": {
+      "patientName": "Patient Name",
+      "doctor": "Assigned Physician",
+      "date": "Date & Time",
+      "department": "Medical Department",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
+    },
+    "errors": {
+      "requiredFields": "Please fill in all required fields.",
+      "fetchFailed": "Failed to load appointments from server.",
+      "saveFailed": "Failed to save appointment. Please try again."
+    },
+    "notifications": {
+      "saved": "Appointment scheduled successfully."
+    }
+  },
+  "medicalRecords": {
+    "title": "Medical Records & AI Insights",
+    "subtitle": "Review medical history, diagnoses, and AI-powered health analytics charts.",
+    "searchPlaceholder": "Search by Chart ID to retrieve health records...",
+    "aiReport": "AI Diagnostic Report",
+    "aiSubtitle": "Instant AI insight generated from recent clinical lab charts and vitals data.",
+    "generatingAi": "Processing data and generating intelligent medical report...",
+    "sections": {
+      "history": "Past Medical History",
+      "diagnoses": "Current Diagnoses",
+      "medications": "Active Medications",
+      "allergies": "Allergies & Contraindications"
+    },
+    "noRecords": "No clinical records found matching the provided Chart ID."
+  }
+}
