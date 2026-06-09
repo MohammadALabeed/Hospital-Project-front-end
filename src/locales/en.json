@@ -49,42 +49,12 @@
       "manageApts": "Appointments Schedule"
     },
     "stats": {
-      "icuTitle": "ICU Bed Occupancy",
-      "icuOccupied": "87.5%",
-      "icuTrend": "-1.2% in last 24h",
-      "physiciansTitle": "On-Call Physicians",
-      "physiciansOnCall": "Active Physicians On Call",
-      "physiciansCount": "14 Active",
-      "physiciansNote": "Distributed across emergency wards",
-      "securityTitle": "Database Protection",
-      "securityStatus": "HIPAA Secured",
-      "securityBadge": "Encrypted Channel"
-    },
-    "inspections": {
-      "title": "Upcoming Institutional Inspections & Rotations",
-      "item1": {
-        "title": "Cardiology Staff Briefings Meeting",
-        "location": "Location: Staff Conference Annex A",
-        "time": "Today, 14:00"
-      },
-      "item2": {
-        "title": "Bi-annual Medical Registry Safety Audit",
-        "note": "Routine security validation batch",
-        "status": "Pending Review"
-      },
-      "item3": {
-        "title": "Pediatric Ward Ventilation Refurbishment",
-        "note": "Technician hardware routine inspections",
-        "team": "Facility Maintenance Team 4 assigned",
-        "time": "June 4, 08:00"
-      }
-    },
-    "compliance": {
-      "title": "System Access Compliance",
-      "body1": "In accordance with standard digital health provisions, all user interactions inside patient directories are logged for internal audit logs.",
-      "body2": "Please lock sessions when leaving terminal workstations unattended.",
-      "encryption": "Encryption Protocol:",
-      "sessionType": "Encryption standard:"
+      "patientsTitle": "Total Patients",
+      "patientsSubtitle": "Total registered patients in the hospital",
+      "nursesTitle": "Total Nurses",
+      "nursesSubtitle": "Nursing staff available for duty",
+      "doctorsTitle": "Total Doctors",
+      "doctorsSubtitle": "Active medical doctors on staff"
     },
     "charts": {
       "title": "Weekly Patient Inflow Traffic",
@@ -150,29 +120,11 @@
     },
     "alerts": {
       "filter": "Clinic filters: Standard default lookup matches all outpatient wards.",
-      "export": "Preparing raw clinical data directory export... CSV generated with HIPAA privacy compliance hashing.",
       "activePatient": "Active patient",
       "secureAudit": "Operation menu for {{name}} pending secure audit."
     },
     "analytics": {
-      "title": "Operational Hospital Analytics",
-      "description": "Patient emergency admissions have escalated by 14% this week. Consider reallocating designated emergency coordinators to Wards 4 and 6 during afternoon surge peak ranges (14:00 - 18:00).",
-      "button": "View Security Report"
-    },
-    "tasks": {
-      "title": "Active Support Tasks",
-      "task1": {
-        "title": "Review Lab Diagnostics #9421",
-        "desc": "Patient: Eleanor Mitchell • Dept: Cardiology"
-      },
-      "task2": {
-        "title": "Physician Sign-off Required",
-        "desc": "Discharge files: Ward 402, Robert Jenkins"
-      },
-      "task3": {
-        "title": "Lobby Sanitization Audit",
-        "desc": "Completed by Helen Miller at 09:30"
-      }
+      "title": "Operational Hospital Analytics"
     }
   },
   "patientModal": {

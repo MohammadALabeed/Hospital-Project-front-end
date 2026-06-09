@@ -4,15 +4,13 @@ import React, { useState, useEffect } from "react";
 import {
   Plus,
   Users,
-  Activity,
   Award,
   AlertTriangle,
   Filter,
   Download,
-  ArrowUpRight,
   CheckCircle2,
   MoreVertical,
-  CheckSquare,
+  Activity,
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
@@ -35,9 +33,9 @@ export default function Patients({ searchTerm }: PatientsProps) {
   /* حالات الذاكرة (States) لإدارة السجلات والواجهة */
   const [patients, setPatients] = useState<Patient[]>([]); // مصفوفة المرضى القادمة من الباك اند
   const [loading, setLoading] = useState(true); // حالة التحميل أثناء جلب البيانات
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false); // التحكم بظهور وإخفاء نافذة التسجيل
-  const [notif, setNotif] = useState<string | null>(null); 
+  const [notif, setNotif] = useState<string | null>(null);
 
   /* دالة جلب سجلات المرضى من المستودع المركزي للبيانات */
   const fetchPatients = async () => {
@@ -45,7 +43,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
     setErrorMsg(null);
     try {
       const response = await apiClient.get("/patients");
-      
+
       // التحقق من أن البيانات القادمة هي مصفوفة بالفعل لتجنب كراش التطبيق
       if (Array.isArray(response.data)) {
         setPatients(response.data);
@@ -74,7 +72,6 @@ export default function Patients({ searchTerm }: PatientsProps) {
   useEffect(() => {
     fetchPatients();
   }, []);
-
 
   const handlePatientRegistered = (newPatient: Patient) => {
     // إضافة المريض الجديد في بداية المصفوفة وتحديث الواجهة فوراً
@@ -142,7 +139,6 @@ export default function Patients({ searchTerm }: PatientsProps) {
 
       {/* قسم الإحصائيات الحيوية (الأرقام والنسب الافتراضية للمستشفى) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
         {/* بطاقة إجمالي قاعدة البيانات النشطة */}
         <div className="bg-white p-6 rounded-2xl border border-outline-variant hover:border-primary/30 transition-all shadow-sm group">
           <div className="flex items-center justify-between mb-4">
@@ -530,94 +526,6 @@ export default function Patients({ searchTerm }: PatientsProps) {
               {t("patients.table.next", "Next")}
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* الجزء السفلي: الملحوظات المؤسسية وقائمة المهام السريرية المطلوبة (Clinical Tasks) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* صندوق التحليلات السريرية العام */}
-        <div className="lg:col-span-8 bg-primary text-white p-8 rounded-2xl shadow-md relative overflow-hidden group">
-          <div className="relative z-10 max-w-xl">
-            <h4 className="text-xl font-bold tracking-tight mb-2 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-sky-300" />
-              <span>
-                {t("patients.analytics.title", "Institutional Insights")}
-              </span>
-            </h4>
-            <p className="text-sm opacity-90 leading-relaxed mb-6 font-sans">
-              {t(
-                "patients.analytics.description",
-                "Occupancy statistics reveal an increase in general clinical admissions. System configuration suggests verifying triage priority distribution across critical care sectors during afternoon shifts.",
-              )}
-            </p>
-            <button
-              type="button"
-              className="bg-white text-primary px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer shadow-sm inline-flex items-center gap-1.5"
-            >
-              <span>
-                {t("patients.analytics.button", "Review Diagnostics Matrix")}
-              </span>
-              <ArrowUpRight
-                className={`w-4 h-4 text-primary ${isRtl ? "rotate-270" : ""}`}
-              />
-            </button>
-          </div>
-          <div className="absolute right-0 bottom-0 w-44 h-44 bg-blue-600/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-500" />
-        </div>
-
-        {/* قائمة المهام السريرية والتحاليل المعلقة للطبيب المناوب */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-outline-variant">
-          <h5 className="text-xs font-bold uppercase tracking-widest text-secondary mb-4 flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-primary" />
-            <span>{t("patients.tasks.title", "Clinical Action Items")}</span>
-          </h5>
-          <ul className="space-y-4">
-            <li className="flex gap-3 items-start">
-              <span className="w-2.5 h-2.5 mt-1 bg-rose-500 rounded-full shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-on-surface">
-                  {t(
-                    "patients.tasks.task1.title",
-                    "Verify Laboratory Screening #9421",
-                  )}
-                </p>
-                <p className="text-[11px] text-secondary mt-0.5">
-                  {t("patients.tasks.task1.desc", "Cardiology Ward Support")}
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-3 items-start">
-              <span className="w-2.5 h-2.5 mt-1 bg-amber-500 rounded-full shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-on-surface">
-                  {t(
-                    "patients.tasks.task2.title",
-                    "Pending Physician Authorization",
-                  )}
-                </p>
-                <p className="text-[11px] text-secondary mt-0.5">
-                  {t(
-                    "patients.tasks.task2.desc",
-                    "Discharge File Verification",
-                  )}
-                </p>
-              </div>
-            </li>
-            <li className="flex gap-3 items-start opacity-50">
-              <span className="w-2.5 h-2.5 mt-1 bg-emerald-500 rounded-full shrink-0" />
-              <div>
-                <p className="text-xs font-bold text-on-surface line-through">
-                  {t(
-                    "patients.tasks.task3.title",
-                    "Sanitization Protocol Review",
-                  )}
-                </p>
-                <p className="text-[11px] text-secondary mt-0.5">
-                  {t("patients.tasks.task3.desc", "Completed Logs Maintained")}
-                </p>
-              </div>
-            </li>
-          </ul>
         </div>
       </div>
 
