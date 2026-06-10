@@ -83,11 +83,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant bg-white text-secondary rounded-lg text-xs font-bold hover:bg-slate-50 transition-all focus:outline-none cursor-pointer shadow-sm"
         >
           <Globe className="w-3.5 h-3.5" />
-            <span>
-              {isRtl
-                ? t("common.language.english", "English")
-                : t("common.language.arabic", "العربية")}
-            </span>
+          <span>
+            {isRtl
+              ? t("common.language.english", "English")
+              : t("common.language.arabic", "العربية")}
+          </span>
+        </button>
         <div className="absolute bottom-[10%] right-[10%] w-[35%] h-[35%] rounded-full bg-primary-container/10 blur-[130px]" />
       </div>
 
@@ -265,10 +266,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   htmlFor="remember_me"
                   className={`${isRtl ? "mr-2.5 ml-0" : "ml-2.5 mr-0"} text-xs text-secondary cursor-pointer font-semibold leading-none`}
                 >
-                  {t(
-                    "login.rememberWorkstation",
-                    "Remember this workstation",
-                  )}
+                  {t("login.rememberWorkstation", "Remember this workstation")}
                 </label>
               </div>
 
@@ -300,13 +298,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                         fill="currentColor"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
-                      
                     </svg>
                     <span>
-                      {t(
-                        "login.status.authenticating",
-                        "Authenticating...",
-                      )}
+                      {t("login.status.authenticating", "Authenticating...")}
                     </span>
                   </>
                 ) : (
