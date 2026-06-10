@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
 import { UserSession } from "../types.js";
+import { button } from "motion/react-client";
 //تحديد نوع البيانات المستقبلة
 interface LoginProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -82,14 +83,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant bg-white text-secondary rounded-lg text-xs font-bold hover:bg-slate-50 transition-all focus:outline-none cursor-pointer shadow-sm"
         >
           <Globe className="w-3.5 h-3.5" />
-          <span>{isRtl ? "English" : "العربية"}</span>
-        </button>
-      </div>
-
-      {/*طبقة خلفية زجاجية مضيئة*/}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="bg-pattern absolute inset-0 opacity-15"></div>
-        <div className="absolute top-[10%] left-[10%] w-[35%] h-[35%] rounded-full bg-primary/10 blur-[130px]" />
+            <span>
+              {isRtl
+                ? t("common.language.english", "English")
+                : t("common.language.arabic", "العربية")}
+            </span>
         <div className="absolute bottom-[10%] right-[10%] w-[35%] h-[35%] rounded-full bg-primary-container/10 blur-[130px]" />
       </div>
 
@@ -206,11 +204,16 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   <button
                     type="button"
                     onClick={() =>
-                      alert("Please contact IT support to reset your password.")
+                      alert(
+                        t(
+                          "login.alerts.passwordReset",
+                          "Please contact IT support to reset your password.",
+                        ),
+                      )
                     }
                     className="text-xs font-semibold text-primary hover:underline transition-all"
                   >
-                    {isRtl ? "نسيت كلمة المرور؟" : "Forgot Password?"}
+                    {t("login.forgotPassword", "Forgot Password?")}
                   </button>
                 </div>
                 <div className="relative group">
@@ -262,7 +265,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   htmlFor="remember_me"
                   className={`${isRtl ? "mr-2.5 ml-0" : "ml-2.5 mr-0"} text-xs text-secondary cursor-pointer font-semibold leading-none`}
                 >
-                  {isRtl ? "تذكر محطة العمل هذه" : "Remember this workstation"}
+                  {t(
+                    "login.rememberWorkstation",
+                    "Remember this workstation",
+                  )}
                 </label>
               </div>
 
@@ -297,7 +303,10 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                       
                     </svg>
                     <span>
-                      {isRtl ? "جاري التحقق من الهوية..." : "Authenticating..."}
+                      {t(
+                        "login.status.authenticating",
+                        "Authenticating...",
+                      )}
                     </span>
                   </>
                 ) : (
@@ -316,17 +325,22 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               className={`mt-8 pt-5 border-t border-outline-variant flex items-center justify-between gap-4 text-xs ${isRtl ? "flex-row-reverse" : ""}`}
             >
               <span className="text-secondary font-semibold font-sans">
-                {isRtl ? "هل تحتاج لمساعدة تقنية مؤسسية؟" : "Need assistance?"}
+                {t("login.help.needAssistance", "Need assistance?")}
               </span>
               {/* زر تذكرة الدعم الفني (يظهر تنبيه مؤقت حالياً عند النقر) */}
               <button
                 type="button"
                 onClick={() =>
-                  alert("Support ticket gateway is currently offline.")
+                  alert(
+                    t(
+                      "login.alerts.supportOffline",
+                      "Support ticket gateway is currently offline.",
+                    ),
+                  )
                 }
                 className="px-3 py-1.5 border border-outline-variant text-secondary font-bold rounded-lg hover:border-primary hover:text-primary transition-all cursor-pointer"
               >
-                {isRtl ? "اتصل بالدعم الفني" : "Contact IT Support"}
+                {t("login.help.contactSupport", "Contact IT Support")}
               </button>
             </div>
           </div>
@@ -349,7 +363,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             {/* شارة التشفير والأمان SSL */}
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              Secure 256-Bit SSL
+              {t("login.footer.sslBadge", "Secure 256-Bit SSL")}
             </span>
 
             {/* شارة رقم إصدار النظام الحالي المستقر */}

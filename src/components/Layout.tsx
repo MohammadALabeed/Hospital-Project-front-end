@@ -11,31 +11,30 @@ import {
   Bell,
   Settings,
   HelpCircle,
-} from "lucide-react"; 
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { UserSession, RoleID } from "../types.js";
 
 // شروط البيانات المستقبلة (Props) للمكون
 interface LayoutProps {
-  children: React.ReactNode; 
-  currentTab: string; 
-  onTabChange: (tab: string) => void; 
-  user: UserSession; 
-  onLogout: () => void; 
-  searchTerm: string; 
-  onSearchChange: (val: string) => void; 
+  children: React.ReactNode;
+  currentTab: string;
+  onTabChange: (tab: string) => void;
+  user: UserSession;
+  onLogout: () => void;
+  searchTerm: string;
+  onSearchChange: (val: string) => void;
 }
 
 export default function Layout({
-  children, 
-  currentTab, 
+  children,
+  currentTab,
   onTabChange,
   user,
   onLogout,
   searchTerm,
   onSearchChange,
 }: LayoutProps) {
-  
   const { t, i18n } = useTranslation();
   const [serverOnline, setServerOnline] = useState(true);
 
@@ -74,7 +73,7 @@ export default function Layout({
       icon: ClipboardList,
     },
   ];
-  
+
   // دالة تحديد نصوص وألوان شارات الصلاحيات (Admin, Doctor, Staff) مضافاً إليها دعم الترجمة
   const getRoleColorAndLabel = (id: RoleID) => {
     switch (id) {
@@ -98,7 +97,7 @@ export default function Layout({
 
   const badgeProps = getRoleColorAndLabel(user.roleId);
   const isRtl = i18n.language === "ar";
-  
+
   // دالة التبديل السريع بين اللغتين العربية والإنجليزية
   const toggleLanguage = () => {
     const nextLang = isRtl ? "en" : "ar";
@@ -107,15 +106,15 @@ export default function Layout({
 
   return (
     // الحاوية الرئيسية الواجهة بالكامل ودعم اتجاه الصفحات RTL/LTR بشكل ديناميكي
-    <div 
-      dir={isRtl ? "rtl" : "ltr"} 
+    <div
+      dir={isRtl ? "rtl" : "ltr"}
       className="flex h-screen w-full bg-surface-container-low text-on-surface 
       antialiased overflow-hidden font-sans"
     >
-      
       {/* القائمة الجانبية للنظام (Sidebar) */}
-      <aside className={`w-64 bg-white flex flex-col h-full shrink-0 ${isRtl ? "border-l" : "border-r"} border-outline-variant`}>
-        
+      <aside
+        className={`w-64 bg-white flex flex-col h-full shrink-0 ${isRtl ? "border-l" : "border-r"} border-outline-variant`}
+      >
         {/* قسم الشعار والاسم (Header) */}
         <div className="p-6 border-b border-outline-variant">
           <div className="flex items-center gap-3">
@@ -132,14 +131,14 @@ export default function Layout({
             </div>
           </div>
         </div>
-      
+
         {/* قائمة أزرار التنقل بين أقسام النظام */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             return (
-              <button 
+              <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`w-full flex items-center gap-3.5 px-4.5 py-3.5 rounded-xl font-semibold text-sm transition-all focus:outline-none cursor-pointer ${
@@ -150,13 +149,15 @@ export default function Layout({
                     : "text-secondary hover:bg-slate-50 hover:text-on-surface"
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-secondary"}`}/>
+                <Icon
+                  className={`w-5 h-5 ${isActive ? "text-primary" : "text-secondary"}`}
+                />
                 <span className="flex-1">{item.label}</span>
               </button>
             );
           })}
         </nav>
-        
+
         {/* أسفل القائمة الجانبية: كارت الموظف الحالي وزر تسجيل الخروج */}
         <div className="p-4 border-t border-outline-variant bg-slate-50">
           <div className="flex items-center gap-3 p-2.5 rounded-xl">
@@ -169,13 +170,15 @@ export default function Layout({
                   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'></circle><circle cx='12' cy='10' r='3'></circle><path d='M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662'></path></svg>";
               }}
             />
-            
+
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-on-surface truncate">
                 {user.fullName}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5 justify-start">
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-full capitalize ${badgeProps.style}`}>
+                <span
+                  className={`text-[9px] font-bold px-1.5 py-0.5 border rounded-full capitalize ${badgeProps.style}`}
+                >
                   {badgeProps.text}
                 </span>
               </div>
@@ -193,13 +196,11 @@ export default function Layout({
           </button>
         </div>
       </aside>
-      
+
       {/* القسم الرئيسي للمحتوى */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
         {/* الشريط العلوي للصفحة (Navbar) */}
         <header className="h-18 shrink-0 border-b border-outline-variant bg-white flex justify-between items-center px-10">
-          
           {/* حقل البحث العالمي وسياق الأيقونة المتغير */}
           <div className="flex items-center gap-3 flex-1 max-w-md relative group">
             <Search
@@ -209,7 +210,10 @@ export default function Layout({
               type="text"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={t("layout.navbar.searchPlaceholder", "Search patient charts...")}
+              placeholder={t(
+                "layout.navbar.searchPlaceholder",
+                "Search patient charts...",
+              )}
               className={`w-full bg-slate-50 border border-outline-variant rounded-lg py-2.5 ${
                 isRtl ? "pr-10 pl-4 text-right" : "pl-10 pr-4 text-left"
               } text-xs font-sans focus:outline-none focus:ring-2 focus:ring-primary transition-all`}
@@ -223,7 +227,11 @@ export default function Layout({
               className="flex items-center gap-1.5 px-4 py-1.5 border border-primary bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-all focus:outline-none cursor-pointer shadow-sm z-50"
             >
               {/* النص هنا يعكس دائماً اسم اللغة الأخرى للتحويل إليها بشكل منطقي */}
-              <span>{isRtl ? "English" : "العربية"}</span>
+              <span>
+                {isRtl
+                  ? t("common.language.english", "English")
+                  : t("common.language.arabic", "العربية")}
+              </span>
             </button>
 
             <button
@@ -234,31 +242,56 @@ export default function Layout({
                   : "bg-amber-50 border-amber-500/20 text-amber-700"
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${serverOnline ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${serverOnline ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}
+              />
               <span>
-                {serverOnline 
-                  ? t("layout.navbar.statusOnline", "System: Online") 
+                {serverOnline
+                  ? t("layout.navbar.statusOnline", "System: Online")
                   : t("layout.navbar.statusOffline", "System: Offline")}
               </span>
             </button>
 
             <button
-              onClick={() => alert("No new system notifications.")}
+              onClick={() =>
+                alert(
+                  t(
+                    "layout.navbar.noNotifications",
+                    "No new system notifications.",
+                  ),
+                )
+              }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none relative"
             >
               <Bell className="w-5 h-5" />
-              <span className={`absolute top-1.5 ${isRtl ? "left-1.5" : "right-1.5"} w-2 h-2 bg-red-500 rounded-full border-2 border-white`} />
+              <span
+                className={`absolute top-1.5 ${isRtl ? "left-1.5" : "right-1.5"} w-2 h-2 bg-red-500 rounded-full border-2 border-white`}
+              />
             </button>
 
             <button
-              onClick={() => alert("Settings panel is under maintenance.")}
+              onClick={() =>
+                alert(
+                  t(
+                    "layout.navbar.settingsMaintenance",
+                    "Settings panel is under maintenance.",
+                  ),
+                )
+              }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none"
             >
               <Settings className="w-5 h-5" />
             </button>
 
             <button
-              onClick={() => alert("Documentation and support gateway.")}
+              onClick={() =>
+                alert(
+                  t(
+                    "layout.navbar.documentationSupport",
+                    "Documentation and support gateway.",
+                  ),
+                )
+              }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none"
             >
               <HelpCircle className="w-5 h-5" />

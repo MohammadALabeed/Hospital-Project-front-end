@@ -4,6 +4,10 @@
       "verifying": "جاري التحقق من شهادات HIPAA الأمنية والاتصال بالخادم..."
     }
   },
+  "common": {
+    "languageEnglish": "English",
+    "languageArabic": "العربية"
+  },
   "login": {
     "title": "بوابة النظام الطبي الموحد",
     "subtitle": "سجل الدخول للوصول إلى قاعدة بيانات المستشفى الآمنة وإدارة شؤون المرضى.",
@@ -11,6 +15,22 @@
     "passwordLabel": "كلمة المرور",
     "button": "تسجيل الدخول الآمن",
     "error": "فشل التحقق من الهوية. يرجى التحقق من البيانات والمحاولة مجدداً.",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "rememberWorkstation": "تذكر محطة العمل هذه",
+    "alerts": {
+      "passwordReset": "يرجى الاتصال بالدعم الفني لإعادة تعيين كلمة المرور.",
+      "supportOffline": "بوابة تذاكر الدعم غير متاحة حالياً."
+    },
+    "status": {
+      "authenticating": "جاري التحقق من الهوية..."
+    },
+    "help": {
+      "needAssistance": "هل تحتاج للمساعدة؟",
+      "contactSupport": "التواصل مع الدعم الفني"
+    },
+    "footer": {
+      "sslBadge": "تشفير SSL 256-بت آمن"
+    },
     "securePortal": "البوابة الطبية الموحدة",
     "sslLabel": "نفق TLS الآمن نشط حالياً"
   },
@@ -32,7 +52,10 @@
       "searchPlaceholder": "ابحث عن المرضى، المواعيد، أو المعرفات الطبية...",
       "profileTooltip": "الملف الشخصي للطبيب",
       "statusOnline": "حالة النظام: متصل",
-      "statusOffline": "حالة النظام: غير متصل"
+      "statusOffline": "حالة النظام: غير متصل",
+      "noNotifications": "لا توجد إشعارات جديدة للنظام.",
+      "settingsMaintenance": "لوحة الإعدادات قيد الصيانة.",
+      "documentationSupport": "بوابة التوثيق والدعم."
     }
   },
   "overview": {
@@ -144,9 +167,11 @@
       "usernameLabel": "اسم المستخدم في النظام",
       "usernamePlaceholder": "مثال: jdoe_med",
       "passwordLabel": "كلمة المرور الافتراضية",
+      "passwordPlaceholder": "••••••••",
       "fullNameLabel": "الاسم الكامل للمريض",
       "fullNamePlaceholder": "جون دو",
       "emailLabel": "البريد الإلكتروني",
+      "emailPlaceholder": "example@domain.com",
       "dobLabel": "تاريخ الميلاد",
       "addressLabel": "العنوان السكني الحالي",
       "addressPlaceholder": "123 الطريق الطبي، جناح 400، نيويورك 10001",
@@ -160,6 +185,16 @@
       "male": "ذكر",
       "female": "أنثى",
       "other": "آخر"
+    },
+    "bloodTypes": {
+      "APlus": "A+ (إيجابي)",
+      "AMinus": "A- (سلبي)",
+      "BPlus": "B+ (إيجابي)",
+      "BMinus": "B- (سلبي)",
+      "OPlus": "O+ (إيجابي)",
+      "OMinus": "O- (سلبي)",
+      "ABPlus": "AB+ (إيجابي)",
+      "ABMinus": "AB- (سلبي)"
     },
     "buttons": {
       "cancel": "إلغاء الأمر",

@@ -4,6 +4,10 @@
       "verifying": "Verifying HIPAA secure certificates and connecting to hub..."
     }
   },
+  "common": {
+    "languageEnglish": "English",
+    "languageArabic": "العربية"
+  },
   "login": {
     "title": "Unified Medical Portal",
     "subtitle": "Log in to access secure hospital database and manage patient registries.",
@@ -11,6 +15,22 @@
     "passwordLabel": "Password",
     "button": "Secure Sign In",
     "error": "Authentication failed. Please check your credentials and try again.",
+    "forgotPassword": "Forgot Password?",
+    "rememberWorkstation": "Remember this workstation",
+    "alerts": {
+      "passwordReset": "Please contact IT support to reset your password.",
+      "supportOffline": "Support ticket gateway is currently offline."
+    },
+    "status": {
+      "authenticating": "Authenticating..."
+    },
+    "help": {
+      "needAssistance": "Need assistance?",
+      "contactSupport": "Contact IT Support"
+    },
+    "footer": {
+      "sslBadge": "Secure 256-Bit SSL"
+    },
     "securePortal": "Unified Medical Portal",
     "sslLabel": "Secure TLS Tunnel Active"
   },
@@ -32,7 +52,10 @@
       "searchPlaceholder": "Search patients, appointments, or medical charts...",
       "profileTooltip": "Physician Profile",
       "statusOnline": "System: Online",
-      "statusOffline": "System: Offline"
+      "statusOffline": "System: Offline",
+      "noNotifications": "No new system notifications.",
+      "settingsMaintenance": "Settings panel is under maintenance.",
+      "documentationSupport": "Documentation and support gateway."
     }
   },
   "overview": {
@@ -144,9 +167,11 @@
       "usernameLabel": "System Username",
       "usernamePlaceholder": "e.g. jdoe_med",
       "passwordLabel": "Default Access Password",
+      "passwordPlaceholder": "••••••••",
       "fullNameLabel": "Patient Full Name",
       "fullNamePlaceholder": "Jonathan Doe",
       "emailLabel": "Email Address",
+      "emailPlaceholder": "example@domain.com",
       "dobLabel": "Date of Birth",
       "addressLabel": "Current Residential Address",
       "addressPlaceholder": "123 Medical Way, Suite 400, NY 10001",
@@ -160,6 +185,16 @@
       "male": "Male",
       "female": "Female",
       "other": "Other"
+    },
+    "bloodTypes": {
+      "APlus": "A+ (A Positive)",
+      "AMinus": "A- (A Negative)",
+      "BPlus": "B+ (B Positive)",
+      "BMinus": "B- (B Negative)",
+      "OPlus": "O+ (O Positive)",
+      "OMinus": "O- (O Negative)",
+      "ABPlus": "AB+ (AB Positive)",
+      "ABMinus": "AB- (AB Negative)"
     },
     "buttons": {
       "cancel": "Cancel",

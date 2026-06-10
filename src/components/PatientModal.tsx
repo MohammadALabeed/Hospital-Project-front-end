@@ -205,7 +205,10 @@ export default function PatientModal({
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={t(
+                        "patientModal.form.passwordPlaceholder",
+                        "••••••••",
+                      )}
                       className="w-full py-2 bg-surface text-sm border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none ps-9 pe-3.5"
                     />
                   </div>
@@ -259,7 +262,10 @@ export default function PatientModal({
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="example@domain.com"
+                      placeholder={t(
+                        "patientModal.form.emailPlaceholder",
+                        "example@domain.com",
+                      )}
                       className="w-full py-2 bg-surface text-sm border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none ps-9 pe-3.5"
                     />
                   </div>
@@ -379,14 +385,33 @@ export default function PatientModal({
                         "Select Blood Type",
                       )}
                     </option>
-                    <option value="A+">A+ (A Positive)</option>
-                    <option value="A-">A- (A Negative)</option>
-                    <option value="B+">B+ (B Positive)</option>
-                    <option value="B-">B- (B Negative)</option>
-                    <option value="O+">O+ (O Positive)</option>
-                    <option value="O-">O- (O Negative)</option>
-                    <option value="AB+">AB+ (AB Positive)</option>
-                    <option value="AB-">AB- (AB Negative)</option>
+                    <option value="A+">
+                      {t("patientModal.bloodTypes.APlus", "A+ (A Positive)")}
+                    </option>
+                    <option value="A-">
+                      {t("patientModal.bloodTypes.AMinus", "A- (A Negative)")}
+                    </option>
+                    <option value="B+">
+                      {t("patientModal.bloodTypes.BPlus", "B+ (B Positive)")}
+                    </option>
+                    <option value="B-">
+                      {t("patientModal.bloodTypes.BMinus", "B- (B Negative)")}
+                    </option>
+                    <option value="O+">
+                      {t("patientModal.bloodTypes.OPlus", "O+ (O Positive)")}
+                    </option>
+                    <option value="O-">
+                      {t("patientModal.bloodTypes.OMinus", "O- (O Negative)")}
+                    </option>
+                    <option value="AB+">
+                      {t("patientModal.bloodTypes.ABPlus", "AB+ (AB Positive)")}
+                    </option>
+                    <option value="AB-">
+                      {t(
+                        "patientModal.bloodTypes.ABMinus",
+                        "AB- (AB Negative)",
+                      )}
+                    </option>
                   </select>
                 </div>
               </div>
