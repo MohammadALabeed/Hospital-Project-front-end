@@ -1,8 +1,6 @@
 // هذا الملف يحتوي على إعدادات أداة Vite التي تُستخدم لتشغيل وبناء مشروع الواجهة الأمامية 
-// استيراد إضافة التحديث الجديد لـ Tailwind CSS المتوافقة مع أداة Vite
-import tailwindcss from '@tailwindcss/vite';
 
-// استيراد إضافة ريأكت الرسمية لتمكين السيرفر من فهم وتشغيل ملفات الـ JSX/TSX بنجاح
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 
 // استيراد مكتبة مسارات الملفات الافتراضية في Node.js للتعامل مع الروابط والمجلدات

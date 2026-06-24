@@ -6,7 +6,9 @@ import {
   ArrowRight,
   ChevronRight,
 } from "lucide-react";
+
 import { useTranslation } from "react-i18next";
+
 // استيراد تيبات التحقق من البيانات الخاصة بالجلسة
 import { UserSession } from "../types.js";
 
@@ -16,9 +18,9 @@ interface OverviewProps {
   onNavigate: (tab: string) => void;
 }
 
+// تفعيل دالة الترجمة ومعرفة اللغة الحالية للنظام
 export default function Overview({ user, onNavigate }: OverviewProps) {
-  // تفعيل دالة الترجمة ومعرفة اللغة الحالية للنظام
-  const { t, i18n } = useTranslation();
+const { t, i18n } = useTranslation();
 
   /* 1. منطق تخصيص الترحيب بناءً على صلاحية المستخدم (Role ID) */
   const getPersonalGreeting = () => {
@@ -42,6 +44,7 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
       className="space-y-8 animate-in fade-in duration-300"
     >
       {/* 2. قسم البانر الرئيسي: الترحيب بالمستخدم وأزرار التنقل السريع */}
+      
       <div className="bg-linear-to-r from-primary to-primary-container text-white p-8 rounded-2xl shadow-xl relative overflow-hidden flex justify-between items-center">
         <div className="relative z-10 max-w-xl space-y-3">
           <span className="text-[10px] bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
@@ -93,7 +96,7 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
         </div>
       </div>
 
-      {/* 3. قسم بطاقات الإحصائيات الجديدة (شبكة بثلاثة أعمدة ثابتة) */}
+      {/* 3. قسم بطاقات الإحصائيات  */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
           <div className="p-4.5 bg-sky-50 text-sky-600 rounded-3xl shrink-0">

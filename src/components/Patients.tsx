@@ -14,10 +14,13 @@ import {
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
+
 // عميل الـ API لإرسال واستقبال البيانات من السيرفر
 import { apiClient } from "../api.js";
+
 // النوع البرمجي لبيانات المريض
 import { Patient } from "../types.js";
+
 // استيراد المكون الابن (النافذة المنبثقة لإضافة مريض)
 import PatientModal from "./PatientModal.jsx";
 
@@ -139,6 +142,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
 
       {/* قسم الإحصائيات الحيوية (الأرقام والنسب الافتراضية للمستشفى) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        
         {/* بطاقة إجمالي قاعدة البيانات النشطة */}
         <div className="bg-white p-6 rounded-2xl border border-outline-variant hover:border-primary/30 transition-all shadow-sm group">
           <div className="flex items-center justify-between mb-4">

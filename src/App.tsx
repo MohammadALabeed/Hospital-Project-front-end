@@ -6,15 +6,20 @@ import Overview from "./components/Overview";
 import Patients from "./components/Patients";
 import Appointments from "./components/Appointments";
 import MedicalRecords from "./components/MedicalRecords";
-import { UserSession } from "./types.js"; //تعريف نوع بيانات جلسة المستخدم
-import { apiClient } from "./api.js"; //مكتبة الاتصال بالباك اند
+import { UserSession } from "./types.js";
+import { apiClient } from "./api.js"; 
 
 export default function App() {
   const { t, i18n } = useTranslation();
+ 
   const isRtl = i18n.language === "ar";
-  const [session, setSession] = useState<UserSession | null>(null); //يخزن بيانات المستخدم الحالي بعد تسجيل الدخول. قيمته الافتراضية null
+  
+  const [session, setSession] = useState<UserSession | null>(null); //يخزن بيانات المستخدم الحالي بعد تسجيل الدخول
+  
   const [checkingSession, setCheckingSession] = useState(true); //وظيفته عرض شاشة "جارٍ التحميل" أثناء فحص السيرفر للتأكد من وجود جلسة قديمة أم لا
+  
   const [currentTab, setCurrentTab] = useState("dashboard"); //يحدد الصفحة النشطة حالياً داخل لوحة التحكم، وافتراضياً يبدأ بصفحة لوحة التحكم  
+  
   const [searchTerm, setSearchTerm] = useState(""); //نص البحث الذي يكتبه المستخدم للبحث عن مريض أو موعد
 
   // الفحص التلقائي لجلسة الدخول (Auto-login)
@@ -38,11 +43,13 @@ export default function App() {
     checkActiveSession();
   }, []);
 
+
   //  معالجة نجاح تسجيل الدخول وتحديث حالة الجلسة نقله ل لوحة التحكم
   const handleLoginSuccess = (user: UserSession) => {
     setSession(user);
     setCurrentTab("dashboard");
   };
+
 //   تسجيل الخروج وإنهاء الجلسة الحالية عن طريق ارسال طلب للباك اند يعود الموقع لصفحة تسجيل الدخول
   const handleLogout = async () => {
     try {
@@ -55,6 +62,7 @@ export default function App() {
       setSearchTerm("");
     }
   };
+  
 // عرض شاشة "جارٍ التحميل" أثناء فحص السيرفر للتأكد من وجود جلسة قديمة أم لا
   if (checkingSession) {
     return (

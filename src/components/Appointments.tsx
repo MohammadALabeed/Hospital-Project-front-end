@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
+
 // استيراد أيقونات التقويم، الوقت، الإضافة، الحفظ وعلامات التحقق
 import { Calendar, Clock, Plus, Save, CheckCircle2 } from "lucide-react";
+
 // أداة الترجمة لدعم اللغتين العربية والإنجليزية
 import { useTranslation } from "react-i18next";
+
 // استيراد الـ apiClient للاتصال مع خادم الباك اند
 import { apiClient } from "../api.js";
+
 // استيراد قالب التحقق من بيانات الموعد (Type/Interface)
 import { Appointment } from "../types.js";
+
 
 export default function Appointments() {
   const { t, i18n } = useTranslation();
