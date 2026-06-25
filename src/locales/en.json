@@ -10,8 +10,7 @@
   },
   "login": {
     "title": "Unified Medical Portal",
-    "subtitle": "Log in to access secure hospital database and manage patient registries.",
-    "emailLabel": "Professional Email Address",
+    "usernameLabel": "Username",
     "passwordLabel": "Password",
     "button": "Secure Sign In",
     "error": "Authentication failed. Please check your credentials and try again.",
@@ -27,12 +26,7 @@
     "help": {
       "needAssistance": "Need assistance?",
       "contactSupport": "Contact IT Support"
-    },
-    "footer": {
-      "sslBadge": "Secure 256-Bit SSL"
-    },
-    "securePortal": "Unified Medical Portal",
-    "sslLabel": "Secure TLS Tunnel Active"
+    }
   },
   "layout": {
     "sidebar": {

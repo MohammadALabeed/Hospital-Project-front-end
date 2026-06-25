@@ -102,9 +102,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <h1 className="text-3xl font-bold text-primary tracking-tight font-sans">
             MedCenter Pro
           </h1>
-          <p className="text-xs text-secondary mt-1 uppercase tracking-widest font-semibold">
-            {t("patients.analytics.title", "Operational Hospital Analytics")}
-          </p>
         </div>
 
         {/*الحاوية الخارجية لبطاقة تسجيل الدخول*/}
@@ -138,12 +135,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               <h2 className="text-2xl font-bold text-on-surface tracking-tight">
                 {t("login.title", "Unified Medical Portal")}
               </h2>
-              <p className="text-sm text-secondary mt-1.5 leading-relaxed">
-                {t(
-                  "login.subtitle",
-                  "Log in to access secure hospital database and manage patient registries.",
-                )}
-              </p>
             </header>
 
             {/*صندوق التنبيه بالأخطاء الديناميكي*/}
@@ -158,13 +149,13 @@ export default function Login({ onLoginSuccess }: LoginProps) {
 
             {/* نموذج إرسال البيانات والاتصال بالدالة المسؤولية عن تسجيل الدخول */}
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* حقل إدخال اسم المستخدم أو البريد الإلكتروني */}
+              {/* حقل إدخال اسم المستخدم */}
               <div className="space-y-1.5">
                 <label
                   className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block"
                   htmlFor="username"
                 >
-                  {t("login.emailLabel", "Professional Email Address")}
+                  {t("login.usernameLabel", "Username")}
                 </label>
                 <div className="relative group">
                   {/* أيقونة المستخدم الجانبية داخل الحقل وتغير موضعها حسب اللغة */}
@@ -178,50 +169,30 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     id="username"
                     name="username"
                     type="text"
+                    dir={isRtl ? "rtl" : "ltr"}
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t(
-                      "login.emailLabel",
-                      "Professional Email Address",
-                    )}
-                    className={`block w-full ${isRtl ? "pr-10 pl-3.5 text-right" : "pl-10 pr-3.5 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
+                    placeholder={t("login.usernameLabel", "Username")}
+                    className={`block w-full ${isRtl ? "pr-10 pl-10 text-right" : "pl-10 pr-10 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
                   />
                 </div>
               </div>
 
               {/* حقل إدخال كلمة المرور مع خيار الاستعادة */}
               <div className="space-y-1.5">
-                <div
-                  className={`flex justify-between items-center ${isRtl ? "flex-row-reverse" : ""}`}
-                >
+                <div className={isRtl ? "text-right" : "text-left"}>
                   <label
-                    className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block"
+                    className={`text-xs font-semibold uppercase tracking-wider text-on-surface-variant block ${isRtl ? "text-right" : "text-left"}`}
                     htmlFor="password"
                   >
                     {t("login.passwordLabel", "Password")}
                   </label>
-
-                  {/* زر نسيت كلمة المرور الرابط بالدعم الفني */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      alert(
-                        t(
-                          "login.alerts.passwordReset",
-                          "Please contact IT support to reset your password.",
-                        ),
-                      )
-                    }
-                    className="text-xs font-semibold text-primary hover:underline transition-all"
-                  >
-                    {t("login.forgotPassword", "Forgot Password?")}
-                  </button>
                 </div>
                 <div className="relative group">
                   {/* أيقونة القفل الجانبية داخل حقل كلمة المرور */}
                   <div
-                    className={`absolute inset-y-0 ${isRtl ? "right-0 pr-3.5" : "left-0 pl-3.5"} flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors`}
+                    className={`absolute inset-y-0 ${isRtl ? "right-10 pr-3.5" : "left-10 pl-3.5"} flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors`}
                   >
                     <Lock className="w-4 h-4" />
                   </div>
@@ -229,18 +200,19 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
+                    dir={isRtl ? "rtl" : "ltr"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className={`block w-full ${isRtl ? "pr-10 pl-12 text-right" : "pl-10 pr-12 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
+                    className={`block w-full ${isRtl ? "pr-16 pl-10 text-right" : "pl-16 pr-10 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
                   />
 
                   {/* زر العين التفاعلي لإظهار أو إخفاء حروف كلمة المرور */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute inset-y-0 ${isRtl ? "left-0 pl-3.5" : "right-0 pr-3.5"} flex items-center text-slate-400 hover:text-primary transition-colors focus:outline-none`}
+                    className={`absolute inset-y-0 ${isRtl ? "right-0 pr-3.5" : "left-0 pl-3.5"} flex items-center text-slate-400 hover:text-primary transition-colors focus:outline-none`}
                   >
                     {showPassword ? (
                       <EyeOff className="w-4 h-4" />
@@ -251,24 +223,43 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </div>
               </div>
 
-              {/* خيار تذكر الحساب ومحطة العمل */}
               <div
-                className={`flex items-center ${isRtl ? "flex-row-reverse" : ""}`}
+                className={`flex flex-col sm:flex-row items-center justify-between gap-3 ${isRtl ? "sm:flex-row-reverse" : ""}`}
               >
-                <input
-                  id="remember_me"
-                  name="remember_me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary"
-                />
-                <label
-                  htmlFor="remember_me"
-                  className={`${isRtl ? "mr-2.5 ml-0" : "ml-2.5 mr-0"} text-xs text-secondary cursor-pointer font-semibold leading-none`}
+                <div className="flex items-center">
+                  <input
+                    id="remember_me"
+                    name="remember_me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-primary border-outline-variant rounded focus:ring-primary"
+                  />
+                  <label
+                    htmlFor="remember_me"
+                    className={`${isRtl ? "mr-2.5 ml-0" : "ml-2.5 mr-0"} text-xs text-secondary cursor-pointer font-semibold leading-none`}
+                  >
+                    {t(
+                      "login.rememberWorkstation",
+                      "Remember this workstation",
+                    )}
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    alert(
+                      t(
+                        "login.alerts.passwordReset",
+                        "Please contact IT support to reset your password.",
+                      ),
+                    )
+                  }
+                  className="text-xs font-semibold text-primary hover:underline transition-all"
                 >
-                  {t("login.rememberWorkstation", "Remember this workstation")}
-                </label>
+                  {t("login.forgotPassword", "Forgot Password?")}
+                </button>
               </div>
 
               {/* زر إرسال النموذج (يتغير مظهره ديناميكياً أثناء حالة التحميل وإرسال الطلب للـ API) */}
@@ -340,34 +331,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             </div>
           </div>
         </div>
-
-        {/* تذييل الصفحة الخارجي (Footer) لتوثيق أمان وإصدار النظام */}
-        <footer className="mt-8 text-center select-text">
-          {/* نص توضيحي لحالة الاتصال بنظام المعلومات الطبي الرئيسي */}
-          <p className="text-[11px] leading-relaxed text-secondary opacity-75 font-semibold">
-            {t(
-              "app.session.verifying",
-              "Connecting to medical information system hub...",
-            )}
-          </p>
-
-          {/* أوسمة وشارات الأمان والنسخة المستقرة للموقع */}
-          <div
-            className={`mt-3 flex justify-center gap-4 text-[11px] text-secondary opacity-75 ${isRtl ? "flex-row-reverse" : ""}`}
-          >
-            {/* شارة التشفير والأمان SSL */}
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-              {t("login.footer.sslBadge", "Secure 256-Bit SSL")}
-            </span>
-
-            {/* شارة رقم إصدار النظام الحالي المستقر */}
-            <span className="flex items-center gap-1">
-              <Terminal className="w-3.5 h-3.5 text-primary" />
-              v4.8.2-stable
-            </span>
-          </div>
-        </footer>
       </div>
     </div>
   );
