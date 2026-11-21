@@ -1,361 +1,443 @@
-import React, { useState, useEffect } from "react";
-
-// استيراد أيقونات التقويم، الوقت، الإضافة، الحفظ وعلامات التحقق
-import { Calendar, Clock, Plus, Save, CheckCircle2 } from "lucide-react";
-
-// أداة الترجمة لدعم اللغتين العربية والإنجليزية
+import React, { useEffect, useState } from "react";
+import { Calendar, CheckCircle2, Clock, Loader2, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-// استيراد الـ apiClient للاتصال مع خادم الباك اند
 import { apiClient } from "../api.js";
 
-// استيراد قالب التحقق من بيانات الموعد (Type/Interface)
-import { Appointment } from "../types.js";
+interface AppointmentRecord {
+  AppointmentID: number | string;
+  PatientID: number | string;
+  DoctorID: number | string;
+  AppointmentDate: string;
+  Status: string;
+}
 
+interface AppointmentPayload {
+  PatientID: number;
+  DoctorID: number;
+  AppointmentDate: string;
+  Status: string;
+}
+
+const isAppointmentRecord = (value: unknown): value is AppointmentRecord => {
+  if (!value || typeof value !== "object") return false;
+  const appointment = value as Record<string, unknown>;
+  return (
+    (typeof appointment.AppointmentID === "number" ||
+      typeof appointment.AppointmentID === "string") &&
+    (typeof appointment.PatientID === "number" || typeof appointment.PatientID === "string") &&
+    (typeof appointment.DoctorID === "number" || typeof appointment.DoctorID === "string") &&
+    typeof appointment.AppointmentDate === "string" &&
+    typeof appointment.Status === "string"
+  );
+};
+
+const getAppointmentKey = (appointmentId: AppointmentRecord["AppointmentID"]) =>
+  String(appointmentId);
+
+const appointmentStatuses = [
+  "Scheduled",
+  "Pending",
+  "Confirmed",
+  "Completed",
+  "Cancelled",
+];
 
 export default function Appointments() {
   const { t, i18n } = useTranslation();
-  const isRtl = i18n.language === "ar";
-
-  /* 1. حالات الذاكرة المؤقتة (States) لإدارة السجلات والتحميل والأخطاء */
-  const [apts, setApts] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [patientId, setPatientId] = useState("");
+  const [doctorId, setDoctorId] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [status, setStatus] = useState("Pending");
+  const [workingAppointmentId, setWorkingAppointmentId] = useState<string | null>(null);
 
-  /* 2. حالات الذاكرة المؤقتة (States) لتجميع بيانات الموعد الجديد من الـ Form */
-  const [patientName, setPatientName] = useState("");
-  const [doctorName, setDoctorName] = useState("");
-  const [dateTime, setDateTime] = useState("");
-  const [department, setDepartment] = useState("general");
-  const [reason, setReason] = useState("");
-  const [notif, setNotif] = useState<string | null>(null);
-
-  /* 3. دالة جلب قائمة المواعيد المحجوزة من السيرفر عبر الـ API (GET Request) */
   const fetchAppointments = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const response = await apiClient.get("/appointments");
-      if (Array.isArray(response.data)) {
-        setApts(response.data);
+      if (!Array.isArray(response.data) || !response.data.every(isAppointmentRecord)) {
+        setErrorMsg(t("appointments.errors.schemaError"));
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg(
-        t("appointments.errors.fetchFailed", "Failed to load appointments."),
-      );
+      setAppointments(response.data);
+    } catch (error) {
+      console.error("Failed to retrieve appointments:", error);
+      setErrorMsg(t("appointments.errors.fetchFailed"));
     } finally {
       setLoading(false);
     }
   };
 
-  /* 4. (useEffect) لتحديث اللوحة وجلب المواعيد فور فتح الشاشة مباشرة */
   useEffect(() => {
-    fetchAppointments();
+    void fetchAppointments();
   }, []);
 
-  /* 5. دالة معالجة وحفظ الموعد الجديد وإرساله لقاعدة البيانات (POST Request) */
-  const handleScheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // منع المتصفح من عمل Refresh عند إرسال النموذج
+  const showNotification = (message: string) => {
+    setNotification(message);
+    window.setTimeout(() => setNotification(null), 4000);
+  };
 
-    // التحقق الفوري من إدخال البيانات المطلوبة
-    if (!patientName || !doctorName || !dateTime || !department) {
-      alert(
-        t(
-          "appointments.errors.requiredFields",
-          "Please fill in all required fields.",
-        ),
-      );
+  const handleScheduleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const parsedPatientId = Number(patientId);
+    const parsedDoctorId = Number(doctorId);
+    if (
+      !Number.isInteger(parsedPatientId) ||
+      parsedPatientId <= 0 ||
+      !Number.isInteger(parsedDoctorId) ||
+      parsedDoctorId <= 0 ||
+      !appointmentDate
+    ) {
+      setActionError(t("appointments.errors.requiredFields"));
       return;
     }
 
-    try {
-      const response = await apiClient.post("/appointments", {
-        patientName,
-        doctorName,
-        dateTime,
-        department,
-        reason,
-      });
+    const payload: AppointmentPayload = {
+      PatientID: parsedPatientId,
+      DoctorID: parsedDoctorId,
+      AppointmentDate: new Date(appointmentDate).toISOString(),
+      Status: status,
+    };
 
-      // في حال نجاح السيرفر بالحفظ، يتم تحديث القائمة محلياً فوراً
-      if (response.data && response.data.success) {
-        setApts((prev) => [response.data.appointment, ...prev]);
-        // تنظيف المدخلات لإتاحة حجز موعد جديد
-        setPatientName("");
-        setDoctorName("");
-        setDateTime("");
-        setReason("");
-        setNotif(
-          t(
-            "appointments.notifications.saved",
-            "Appointment scheduled successfully.",
-          ),
-        );
-        setTimeout(() => setNotif(null), 4000);
+    setActionError(null);
+    try {
+      const response = await apiClient.post("/appointments", payload);
+      const createdAppointment: unknown = response.data?.data;
+      if (isAppointmentRecord(createdAppointment)) {
+        setAppointments((previousAppointments) => [
+          createdAppointment,
+          ...previousAppointments,
+        ]);
+      } else {
+        await fetchAppointments();
       }
-    } catch (err) {
-      console.error(err);
-      alert(t("appointments.errors.saveFailed", "Failed to save appointment."));
+      setPatientId("");
+      setDoctorId("");
+      setAppointmentDate("");
+      setStatus("Pending");
+      showNotification(t("appointments.notifications.saved"));
+    } catch (error) {
+      console.error("Failed to create appointment:", error);
+      setActionError(t("appointments.errors.saveFailed"));
     }
+  };
+
+  const handleStatusChange = async (
+    appointment: AppointmentRecord,
+    nextStatus: string,
+  ) => {
+    const appointmentKey = getAppointmentKey(appointment.AppointmentID);
+    const payload: AppointmentPayload = {
+      PatientID: Number(appointment.PatientID),
+      DoctorID: Number(appointment.DoctorID),
+      AppointmentDate: appointment.AppointmentDate,
+      Status: nextStatus,
+    };
+
+    setWorkingAppointmentId(appointmentKey);
+    setActionError(null);
+    try {
+      const response = await apiClient.put(
+        `/appointments/${appointment.AppointmentID}`,
+        payload,
+      );
+      const updatedAppointment: unknown = response.data?.data;
+      setAppointments((previousAppointments) =>
+        previousAppointments.map((currentAppointment) =>
+          getAppointmentKey(currentAppointment.AppointmentID) === appointmentKey
+            ? isAppointmentRecord(updatedAppointment)
+              ? updatedAppointment
+              : { ...currentAppointment, Status: nextStatus }
+            : currentAppointment,
+        ),
+      );
+      showNotification(t("appointments.notifications.updated"));
+    } catch (error) {
+      console.error("Failed to update appointment status:", error);
+      setActionError(t("appointments.errors.updateFailed"));
+    } finally {
+      setWorkingAppointmentId(null);
+    }
+  };
+
+  const handleDeleteAppointment = async (appointment: AppointmentRecord) => {
+    const appointmentKey = getAppointmentKey(appointment.AppointmentID);
+    setWorkingAppointmentId(appointmentKey);
+    setActionError(null);
+    try {
+      await apiClient.delete(`/appointments/${appointment.AppointmentID}`);
+      setAppointments((previousAppointments) =>
+        previousAppointments.filter(
+          (currentAppointment) =>
+            getAppointmentKey(currentAppointment.AppointmentID) !== appointmentKey,
+        ),
+      );
+      showNotification(t("appointments.notifications.deleted"));
+    } catch (error) {
+      console.error("Failed to delete appointment:", error);
+      setActionError(t("appointments.errors.deleteFailed"));
+    } finally {
+      setWorkingAppointmentId(null);
+    }
+  };
+
+  const formatAppointmentDate = (date: string) => {
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return t("appointments.table.invalidDate");
+    return new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(parsedDate);
+  };
+
+  const getStatusStyle = (appointmentStatus: string) => {
+    switch (appointmentStatus.trim().toLowerCase()) {
+      case "confirmed":
+      case "completed":
+        return "border-emerald-400/20 bg-emerald-50 text-emerald-800";
+      case "cancelled":
+        return "border-rose-400/20 bg-rose-50 text-rose-800";
+      case "pending":
+        return "border-amber-400/20 bg-amber-50 text-amber-800";
+      case "scheduled":
+        return "border-sky-400/20 bg-sky-50 text-sky-800";
+      default:
+        return "border-sky-400/20 bg-sky-50 text-sky-800";
+    }
+  };
+
+  const getStatusLabel = (appointmentStatus: string) => {
+    const statusKey = appointmentStatuses.find(
+      (knownStatus) => knownStatus.toLowerCase() === appointmentStatus.trim().toLowerCase(),
+    );
+    return statusKey
+      ? t(`appointments.status.${statusKey.toLowerCase()}`)
+      : appointmentStatus;
   };
 
   return (
     <div
-      dir={isRtl ? "rtl" : "ltr"}
+      dir={i18n.language === "ar" ? "rtl" : "ltr"}
       className="space-y-8 animate-in fade-in duration-300"
     >
-      {/* هيدر الصفحة والعناوين التعريفية */}
-      <div>
-        <h2 className="text-3xl font-bold text-primary tracking-tight font-sans">
-          {t("appointments.title", "Appointments Overview")}
+      <header>
+        <h2 className="text-3xl font-bold tracking-tight text-primary">
+          {t("appointments.title")}
         </h2>
-        <p className="text-sm text-secondary mt-1">
-          {t(
-            "appointments.subtitle",
-            "Manage and book patient consultation slots.",
-          )}
-        </p>
-      </div>
+        <p className="mt-1 text-sm text-secondary">{t("appointments.subtitle")}</p>
+      </header>
 
-      {/* واجهة إشعارات النجاح أو الفشل الديناميكية */}
-      {notif && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-500/20 text-emerald-800 text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shadow-sm shrink-0" />
-          <span>{notif}</span>
+      {notification && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+          <span>{notification}</span>
+        </div>
+      )}
+      {(errorMsg || actionError) && (
+        <div role="alert" className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-50 p-4 text-sm font-semibold text-rose-800">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-rose-600" />
+          <span>{actionError ?? errorMsg}</span>
         </div>
       )}
 
-      {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-500/20 text-rose-800 text-sm font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-rose-600 shadow-sm shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* 6. واجهة الاستمارة (Form): نموذج حجز موعد جديد للمريض */}
-        <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-outline-variant h-fit">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-primary border-b border-slate-100 pb-3.5 mb-5 flex items-center gap-2">
-            <Plus className="w-4.5 h-4.5" />
-            <span>{t("appointments.form.title", "Book Appointment")}</span>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <section className="h-fit rounded-2xl border border-outline-variant bg-white p-6 lg:col-span-4">
+          <h3 className="mb-5 flex items-center gap-2 border-b border-slate-100 pb-3.5 text-sm font-bold uppercase tracking-wider text-primary">
+            <Plus className="h-4 w-4" />
+            {t("appointments.form.title")}
           </h3>
-
-          <form
-            onSubmit={handleScheduleSubmit}
-            className="space-y-4 font-sans text-xs"
-          >
-            {/* حقل اسم المريض */}
+          <form onSubmit={handleScheduleSubmit} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant block">
-                {t("appointments.form.patientNameLabel", "Patient Name")}
+              <label htmlFor="appointment-patient-id" className="block text-xs font-semibold text-on-surface-variant">
+                {t("appointments.form.patientIdLabel")}
               </label>
               <input
-                type="text"
+                id="appointment-patient-id"
+                type="number"
+                min="1"
+                step="1"
                 required
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder={t(
-                  "appointments.form.patientNamePlaceholder",
-                  "Jonathan Doe",
-                )}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans"
+                value={patientId}
+                onChange={(event) => setPatientId(event.target.value)}
+                placeholder={t("appointments.form.patientIdPlaceholder")}
+                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
               />
             </div>
-
-            {/* قائمة اختيار الطبيب المعالج */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant block">
-                {t("appointments.table.doctor", "Physician")}
+              <label htmlFor="appointment-doctor-id" className="block text-xs font-semibold text-on-surface-variant">
+                {t("appointments.form.doctorIdLabel")}
               </label>
-              <select
+              <input
+                id="appointment-doctor-id"
+                type="number"
+                min="1"
+                step="1"
                 required
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans cursor-pointer"
-              >
-                <option value="" disabled>
-                  {t(
-                    "appointments.form.selectDoctorPlaceholder",
-                    "Select practitioner",
-                  )}
-                </option>
-                <option value="Dr. Alexander">Dr. Alexander</option>
-                <option value="Dr. Sarah Taylor">Dr. Sarah Taylor</option>
-                <option value="Dr. Michael Vance">Dr. Michael Vance</option>
-              </select>
-            </div>
-
-            {/* حقل تحديد تاريخ ووقت الزيارة الطبية */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1">
-                <label className="text-xs font-semibold text-on-surface-variant block">
-                  {t("appointments.table.date", "Date & Time")}
-                </label>
-                <input
-                  type="datetime-local"
-                  required
-                  value={dateTime}
-                  onChange={(e) => setDateTime(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* قائمة اختيار قسم العيادة الطبية */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant block">
-                {t("appointments.table.department", "Department")}
-              </label>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans cursor-pointer"
-              >
-                <option value="general">
-                  {t("patients.departments.general", "General Medicine")}
-                </option>
-                <option value="cardiology">
-                  {t("patients.departments.cardiology", "Cardiology")}
-                </option>
-                <option value="pediatrics">
-                  {t("patients.departments.pediatrics", "Pediatrics")}
-                </option>
-                <option value="neurology">
-                  {t("patients.departments.neurology", "Neurology")}
-                </option>
-              </select>
-            </div>
-
-            {/* حقل كتابة سبب الزيارة */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-on-surface-variant block">
-                {t("appointments.form.reasonLabel", "Reason for Visit")}
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder={t(
-                  "appointments.form.reasonPlaceholder",
-                  "Enter reason for visit...",
-                )}
-                rows={3}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-xs font-sans resize-none"
+                value={doctorId}
+                onChange={(event) => setDoctorId(event.target.value)}
+                placeholder={t("appointments.form.doctorIdPlaceholder")}
+                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
               />
             </div>
-
-            {/* زر تأكيد الإرسال والحفظ للباك اند */}
+            <div className="space-y-1">
+              <label htmlFor="appointment-date" className="block text-xs font-semibold text-on-surface-variant">
+                {t("appointments.form.dateLabel")}
+              </label>
+              <input
+                id="appointment-date"
+                type="datetime-local"
+                required
+                value={appointmentDate}
+                onChange={(event) => setAppointmentDate(event.target.value)}
+                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="appointment-status" className="block text-xs font-semibold text-on-surface-variant">
+                {t("appointments.table.status")}
+              </label>
+              <select
+                id="appointment-status"
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
+              >
+                {appointmentStatuses.map((appointmentStatus) => (
+                  <option key={appointmentStatus} value={appointmentStatus}>
+                    {getStatusLabel(appointmentStatus)}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button
               type="submit"
-              className="w-full bg-primary text-white py-3 rounded-lg font-bold text-xs hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-primary/90"
             >
-              <Save className="w-4 h-4" />
-              <span>
-                {t("appointments.form.saveButton", "Save Appointment")}
-              </span>
+              <Save className="h-4 w-4" />
+              {t("appointments.form.saveButton")}
             </button>
           </form>
-        </div>
+        </section>
 
-        {/* 7. واجهة الجدول (Table): لعرض ومتابعة المواعيد المحجوزة حالياً بالمستشفى */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col justify-between">
-          <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-slate-50">
-            <h4 className="text-base font-bold text-primary flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              <span>{t("appointments.title", "Scheduled Slots")}</span>
-            </h4>
-            <span className="text-xs text-secondary font-bold">
-              {t("patients.table.exportButton", "Total")}: {apts.length}
+        <section className="flex flex-col overflow-hidden rounded-2xl border border-outline-variant bg-white shadow-sm lg:col-span-8">
+          <div className="flex items-center justify-between border-b border-outline-variant bg-slate-50 px-6 py-4">
+            <h3 className="flex items-center gap-2 text-base font-bold text-primary">
+              <Calendar className="h-5 w-5" />
+              {t("appointments.table.title")}
+            </h3>
+            <span className="text-xs font-bold text-secondary">
+              {t("appointments.table.total", { count: appointments.length })}
             </span>
           </div>
 
           <div className="overflow-x-auto">
-            {/* عرض واجهة الانتظار أثناء تحميل البيانات */}
             {loading ? (
-              <div className="p-16 text-center text-secondary text-xs uppercase tracking-widest font-semibold">
-                {t("appointments.loading", "Loading appointments...")}
+              <div role="status" className="p-16 text-center text-sm font-semibold text-secondary">
+                {t("appointments.loading")}
               </div>
-            ) : apts.length === 0 ? (
-              /* في حال كان جدول العيادات فارغ تماماً */
-              <div className="p-16 text-center text-secondary font-semibold">
-                {t("appointments.noAppointments", "No appointments scheduled.")}
+            ) : errorMsg ? (
+              <div className="p-16 text-center">
+                <button
+                  type="button"
+                  onClick={() => void fetchAppointments()}
+                  className="text-sm font-bold text-primary underline"
+                >
+                  {t("appointments.table.retry")}
+                </button>
+              </div>
+            ) : appointments.length === 0 ? (
+              <div className="p-16 text-center text-sm font-semibold text-secondary">
+                {t("appointments.noAppointments")}
               </div>
             ) : (
-              /* رسم محتويات الجدول الحقيقية بعد اكتمال الاستجابة */
               <table className="w-full border-collapse">
-                <thead className="bg-[#f8fafc] border-b border-outline-variant">
-                  <tr className="select-none">
-                    <th className="px-5 py-3 text-xs font-bold text-secondary uppercase tracking-wider font-sans text-start">
-                      {t("appointments.table.patientName", "Patient")}
+                <thead className="border-b border-outline-variant bg-slate-50">
+                  <tr>
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.appointmentId")}
                     </th>
-                    <th className="px-5 py-3 text-xs font-bold text-secondary uppercase tracking-wider font-sans text-start">
-                      {t("appointments.table.doctor", "Doctor")}
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.patientId")}
                     </th>
-                    <th className="px-5 py-3 text-xs font-bold text-secondary uppercase tracking-wider font-sans text-start">
-                      {t("appointments.table.date", "Date & Time")}
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.doctorId")}
                     </th>
-                    <th className="px-5 py-3 text-xs font-bold text-secondary uppercase tracking-wider font-sans text-start">
-                      {t("appointments.table.department", "Department")}
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.date")}
                     </th>
-                    <th className="px-5 py-3 text-xs font-bold text-secondary uppercase tracking-wider font-sans text-start">
-                      {t("appointments.table.status", "Status")}
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.status")}
+                    </th>
+                    <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                      {t("appointments.table.actions")}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-outline-variant font-sans text-xs">
-                  {apts.map((item) => {
-                    /* 8. منطق تلوين شارات الحالة (Confirmed, Pending, Cancelled) ديناميكياً */
-                    const getStatusStyle = (s: string) => {
-                      switch (s) {
-                        case "Confirmed":
-                          return "bg-emerald-50 text-emerald-800 border-emerald-400/20";
-                        case "Pending":
-                          return "bg-amber-50 text-amber-800 border-amber-400/20";
-                        case "Cancelled":
-                          return "bg-rose-50 text-rose-800 border-rose-400/20";
-                        default:
-                          return "bg-sky-50 text-sky-800 border-sky-400/20";
-                      }
-                    };
-
+                <tbody className="divide-y divide-outline-variant text-xs">
+                  {appointments.map((appointment) => {
+                    const appointmentKey = getAppointmentKey(appointment.AppointmentID);
+                    const isWorking = workingAppointmentId === appointmentKey;
                     return (
-                      <tr
-                        key={item.id}
-                        className="hover:bg-primary/5 transition-colors cursor-pointer"
-                      >
-                        <td className="px-5 py-4">
-                          <p className="font-bold text-on-surface">
-                            {item.patientName}
-                          </p>
+                      <tr key={appointmentKey} className="transition-colors hover:bg-primary/5">
+                        <td className="px-5 py-4 text-start font-mono text-sm font-bold text-primary">
+                          #{appointment.AppointmentID}
                         </td>
-                        <td className="px-5 py-4 font-semibold text-on-surface-variant">
-                          {item.doctorName}
+                        <td className="px-5 py-4 text-start font-semibold text-on-surface">
+                          {appointment.PatientID}
                         </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-on-surface font-semibold">
-                            <Clock className="w-3.5 h-3.5 text-secondary" />
-
-                            {/* صياغة صيغة التاريخ محلياً وتلقائياً */}
-                            <span>
-                              {new Date(item.dateTime).toLocaleDateString()}
-                            </span>
-                          </div>
+                        <td className="px-5 py-4 text-start font-semibold text-on-surface">
+                          {appointment.DoctorID}
                         </td>
-                        <td className="px-5 py-4">
-                          {t(
-                            `patients.departments.${item.department.toLowerCase()}`,
-                            item.department,
-                          )}
-                        </td>
-                        {/* عمود حالة الموعد مع الشارة الملونة */}
-                        <td className="px-5 py-4">
-                          <span
-                            className={`px-2.5 py-0.5 border text-[10px] font-bold rounded-full ${getStatusStyle(item.status)}`}
-                          >
-                            {t(
-                              `appointments.status.${item.status.toLowerCase()}`,
-                              item.status,
-                            )}
+                        <td className="whitespace-nowrap px-5 py-4 text-start font-semibold text-on-surface">
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-secondary" />
+                            {formatAppointmentDate(appointment.AppointmentDate)}
                           </span>
+                        </td>
+                        <td className="px-5 py-4 text-start">
+                          <select
+                            aria-label={t("appointments.table.editStatus", {
+                              id: appointment.AppointmentID,
+                            })}
+                            value={appointment.Status}
+                            disabled={isWorking || Boolean(workingAppointmentId)}
+                            onChange={(event) =>
+                              void handleStatusChange(appointment, event.target.value)
+                            }
+                            className={`rounded-full border px-3 py-1 text-xs font-bold outline-none disabled:opacity-60 ${getStatusStyle(appointment.Status)}`}
+                          >
+                            {!appointmentStatuses.some(
+                              (knownStatus) =>
+                                knownStatus.toLowerCase() === appointment.Status.trim().toLowerCase(),
+                            ) && <option value={appointment.Status}>{appointment.Status}</option>}
+                            {appointmentStatuses.map((appointmentStatus) => (
+                              <option key={appointmentStatus} value={appointmentStatus}>
+                                {getStatusLabel(appointmentStatus)}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-5 py-4 text-start">
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteAppointment(appointment)}
+                            disabled={isWorking || Boolean(workingAppointmentId)}
+                            aria-label={t("appointments.table.deleteAppointment", {
+                              id: appointment.AppointmentID,
+                            })}
+                            className="rounded-lg p-2 text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                          >
+                            {isWorking ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
                         </td>
                       </tr>
                     );
@@ -364,14 +446,10 @@ export default function Appointments() {
               </table>
             )}
           </div>
-
-          <div className="px-6 py-4 bg-slate-50 border-t border-outline-variant text-[11px] text-secondary font-bold">
-            {t(
-              "patients.table.directoryTitle",
-              "Showing active facility schedule rows.",
-            )}
-          </div>
-        </div>
+          <footer className="border-t border-outline-variant bg-slate-50 px-6 py-4 text-[11px] font-bold text-secondary">
+            {t("appointments.table.footer")}
+          </footer>
+        </section>
       </div>
     </div>
   );

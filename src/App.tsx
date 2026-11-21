@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react"; //لإنشاء "حالة" (State)، وهي عبارة عن ذاكرة مؤقتة خاصة بالصفحة
+import React, { useState, useEffect } from "react";
+import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import Login from "./components/Login";
 import Layout from "./components/Layout";
@@ -9,14 +10,86 @@ import MedicalRecords from "./components/MedicalRecords";
 import { UserSession } from "./types.js";
 import { apiClient } from "./api.js";
 
+const SESSION_STORAGE_KEY = "app_user_session";
+
+const isUserSession = (value: unknown): value is UserSession => {
+  if (!value || typeof value !== "object") return false;
+  const session = value as Record<string, unknown>;
+  return (
+    typeof session.username === "string" &&
+    typeof session.fullName === "string" &&
+    typeof session.roleId === "number" &&
+    ["Admin", "Doctor", "Employee", "Patient"].includes(String(session.roleName))
+  );
+};
+
+const readStoredSession = (): UserSession | null => {
+  try {
+    const storedSession = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!storedSession) return null;
+    const parsedSession: unknown = JSON.parse(storedSession);
+    return isUserSession(parsedSession) ? parsedSession : null;
+  } catch (error) {
+    console.error("Failed to restore the saved user session:", error);
+    return null;
+  }
+};
+
+const persistSession = (session: UserSession) => {
+  try {
+    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch (error) {
+    console.error("Failed to save the user session:", error);
+  }
+};
+
+const clearStoredSession = () => {
+  try {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch (error) {
+    console.error("Failed to clear the saved user session:", error);
+  }
+};
+
+const normalizeSession = (value: unknown): UserSession | null => {
+  if (!value || typeof value !== "object") return null;
+  const user = value as Record<string, unknown>;
+  if (isUserSession(user)) return user;
+
+  const username = user.Username ?? user.username;
+  const roleId = user.RoleID ?? user.roleId;
+  if (typeof username !== "string" || typeof roleId !== "number") return null;
+
+  const roleNames: Record<number, UserSession["roleName"]> = {
+    1: "Admin",
+    2: "Doctor",
+    3: "Employee",
+    4: "Patient",
+  };
+  const roleName = roleNames[roleId];
+  if (!roleName) return null;
+
+  return {
+    username,
+    fullName:
+      typeof user.fullName === "string"
+        ? user.fullName
+        : typeof user.FullName === "string"
+          ? user.FullName
+          : username,
+    roleId: roleId as UserSession["roleId"],
+    roleName,
+  };
+};
+
 export default function App() {
   const { t, i18n } = useTranslation();
 
   const isRtl = i18n.language === "ar";
 
-  const [session, setSession] = useState<UserSession | null>(null); //يخزن بيانات المستخدم الحالي بعد تسجيل الدخول
-
-  const [checkingSession, setCheckingSession] = useState(true); //وظيفته عرض شاشة "جارٍ التحميل" أثناء فحص السيرفر للتأكد من وجود جلسة قديمة أم لا
+  const [session, setSession] = useState<UserSession | null>(() => readStoredSession());
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authCheckError, setAuthCheckError] = useState<string | null>(null);
 
   const [currentTab, setCurrentTab] = useState("dashboard"); //يحدد الصفحة النشطة حالياً داخل لوحة التحكم، وافتراضياً يبدأ بصفحة لوحة التحكم
 
@@ -24,18 +97,30 @@ export default function App() {
 
   // الفحص التلقائي لجلسة الدخول (Auto-login)
   const checkActiveSession = async () => {
-    setCheckingSession(true);
+    setCheckingAuth(true);
+    setAuthCheckError(null);
     try {
       const response = await apiClient.get("/auth/me");
-      if (response.data && response.data.authenticated) {
-        setSession(response.data.user);
+      const userSession = normalizeSession(response.data?.user ?? response.data?.data?.user);
+      const activeSession = userSession ?? readStoredSession();
+      if (response.status === 200 && response.data?.authenticated !== false && activeSession) {
+        setSession(activeSession);
+        persistSession(activeSession);
+      } else {
+        setAuthCheckError(t("app.session.verificationFailed"));
       }
     } catch (error) {
-      console.log(
-        "No active session found. Redirection to authentication portal required.",
-      );
+      if (isAxiosError(error) && error.response?.status === 401) {
+        setSession(null);
+        clearStoredSession();
+      } else {
+        console.error("Failed to verify the active session:", error);
+        if (!readStoredSession()) {
+          setAuthCheckError(t("app.session.connectionFailed"));
+        }
+      }
     } finally {
-      setCheckingSession(false);
+      setCheckingAuth(false);
     }
   };
 
@@ -46,6 +131,8 @@ export default function App() {
   //  معالجة نجاح تسجيل الدخول وتحديث حالة الجلسة نقله ل لوحة التحكم
   const handleLoginSuccess = (user: UserSession) => {
     setSession(user);
+    persistSession(user);
+    setAuthCheckError(null);
     setCurrentTab("dashboard");
   };
 
@@ -57,13 +144,14 @@ export default function App() {
       console.error("Error occurred during logout process:", error);
     } finally {
       setSession(null);
+      clearStoredSession();
       setCurrentTab("dashboard");
       setSearchTerm("");
     }
   };
 
   // عرض شاشة "جارٍ التحميل" أثناء فحص السيرفر للتأكد من وجود جلسة قديمة أم لا
-  if (checkingSession) {
+  if (checkingAuth) {
     return (
       <div
         className={`min-h-screen w-full bg-[#f8f9fb] flex flex-col items-center justify-center font-sans ${isRtl ? "text-right" : "text-left"}`}
@@ -90,6 +178,29 @@ export default function App() {
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
+        <p className="text-sm font-semibold text-secondary">
+          {t("app.session.restoring")}
+        </p>
+      </div>
+    );
+  }
+
+  if (!session && authCheckError) {
+    return (
+      <div
+        dir={i18n.language === "ar" ? "rtl" : "ltr"}
+        className="flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-[#f8f9fb] p-6 text-center"
+      >
+        <p role="alert" className="text-sm font-semibold text-secondary">
+          {authCheckError}
+        </p>
+        <button
+          type="button"
+          onClick={() => void checkActiveSession()}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white"
+        >
+          {t("app.session.retry")}
+        </button>
       </div>
     );
   }

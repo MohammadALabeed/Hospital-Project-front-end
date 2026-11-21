@@ -33,6 +33,13 @@ export interface Patient {
   status: "Stable" | "Critical" | "Recovering" | "Observation";
 }
 
+export interface PatientRecord {
+  PatientID: number | string;
+  UserID: number | string;
+  BloodType: string | null;
+  [key: string]: unknown;
+}
+
 // المواعيد في قاعدة البيانات
 export interface Appointment {
   id: string;

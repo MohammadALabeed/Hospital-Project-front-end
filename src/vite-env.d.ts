@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 //typescript يسمح بالتعامل مع ملفات ال css
 declare module "*.css" {
   const content: { [className: string]: string };

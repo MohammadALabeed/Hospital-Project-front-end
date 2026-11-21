@@ -7,18 +7,17 @@ import {
   EyeOff,
   ArrowRight,
   User,
-  Terminal,
   Globe,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
 import { UserSession } from "../types.js";
-import { button } from "motion/react-client";
 
 //تحديد نوع البيانات المستقبلة
 interface LoginProps {
   onLoginSuccess: (session: UserSession) => void;
 }
+
 //بيانات الحقول
 export default function Login({ onLoginSuccess }: LoginProps) {
   const { t, i18n } = useTranslation();
@@ -26,6 +25,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   //حالة التحميل و الرسائل الخطأ
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -42,19 +42,39 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setErrorMsg(null);
 
     try {
+      // إرسال البيانات للباك إند بالحروف الكبيرة كما يتوقعها السيرفر
       const response = await apiClient.post("/auth/login", {
-        username,
-        password,
+        Username: username,
+        Password: password,
       });
-      if (response.data && response.data.success) {
-        onLoginSuccess(response.data.user);
+
+      // التحقق من استلام بيانات المستخدم من السيرفر
+      if (response.data && response.data.user) {
+        const backendUser = response.data.user;
+
+        const roleNames: Record<number, "Admin" | "Doctor" | "Employee" | "Patient"> = {
+          1: "Admin",
+          2: "Doctor",
+          3: "Employee",
+          4: "Patient",
+        };
+
+        const sessionData: UserSession = {
+          username: backendUser.Username,
+          fullName: backendUser.Username,
+          roleId: backendUser.RoleID,
+          roleName: roleNames[backendUser.RoleID] || "Admin",
+        };
+
+        onLoginSuccess(sessionData);
       } else {
         setErrorMsg(t("login.error", "Invalid username or password."));
       }
-      //لمعرفة سبب الخطأوعرض رسالة الخطأ المناسبة للمستخدم
     } catch (error: any) {
       console.error("Login request failed:", error);
-      if (error.response && error.response.data && error.response.data.error) {
+      if (error.response && error.response.data && error.response.data.message) {
+        setErrorMsg(error.response.data.message);
+      } else if (error.response && error.response.data && error.response.data.error) {
         setErrorMsg(error.response.data.error);
       } else {
         setErrorMsg(
@@ -129,6 +149,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               </span>
             </div>
           </div>
+
           {/*العناصر النصية الترحيبية داخل البطاقة*/}
           <div className="p-8 md:p-10">
             <header className="mb-6">
@@ -158,7 +179,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   {t("login.usernameLabel", "Username")}
                 </label>
                 <div className="relative group">
-                  {/* أيقونة المستخدم الجانبية داخل الحقل وتغير موضعها حسب اللغة */}
                   <div
                     className={`absolute inset-y-0 ${isRtl ? "right-0 pr-3.5" : "left-0 pl-3.5"} flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors`}
                   >
@@ -190,7 +210,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   </label>
                 </div>
                 <div className="relative group">
-                  {/* أيقونة القفل الجانبية داخل حقل كلمة المرور */}
                   <div
                     className={`absolute inset-y-0 ${isRtl ? "right-10 pr-3.5" : "left-10 pl-3.5"} flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors`}
                   >
@@ -208,7 +227,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     className={`block w-full ${isRtl ? "pr-16 pl-10 text-right" : "pl-16 pr-10 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
                   />
 
-                  {/* زر العين التفاعلي لإظهار أو إخفاء حروف كلمة المرور */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -262,7 +280,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 </button>
               </div>
 
-              {/* زر إرسال النموذج (يتغير مظهره ديناميكياً أثناء حالة التحميل وإرسال الطلب للـ API) */}
+              {/* زر إرسال النموذج */}
               <button
                 type="submit"
                 disabled={loading}
@@ -270,7 +288,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               >
                 {loading ? (
                   <>
-                    {/* مؤشر الدوران الأوتوماتيكي عند انتظار استجابة الخادم */}
                     <svg
                       className="animate-spin h-4 w-4 text-white"
                       xmlns="http://www.w3.org/2000/svg"
@@ -297,7 +314,6 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   </>
                 ) : (
                   <>
-                    {/* المظهر الطبيعي للزر في حالة الاستقرار */}
                     <span>{t("login.button", "Secure Sign In")}</span>
                     <ArrowRight
                       className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRtl ? "rotate-180 group-hover:-translate-x-1" : ""}`}
@@ -306,14 +322,14 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 )}
               </button>
             </form>
-            {/* قسم المساعدة والدعم التقني المؤسسي في أسفل بطاقة تسجيل الدخول */}
+
+            {/* قسم المساعدة والدعم التقني المؤسسي */}
             <div
               className={`mt-8 pt-5 border-t border-outline-variant flex items-center justify-between gap-4 text-xs ${isRtl ? "flex-row-reverse" : ""}`}
             >
               <span className="text-secondary font-semibold font-sans">
                 {t("login.help.needAssistance", "Need assistance?")}
               </span>
-              {/* زر تذكرة الدعم الفني (يظهر تنبيه مؤقت حالياً عند النقر) */}
               <button
                 type="button"
                 onClick={() =>

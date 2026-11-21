@@ -1,7 +1,11 @@
 {
   "app": {
     "session": {
-      "verifying": "Verifying HIPAA secure certificates and connecting to hub..."
+      "verifying": "Verifying HIPAA secure certificates and connecting to hub...",
+      "restoring": "Verifying your sign-in session...",
+      "verificationFailed": "Your sign-in session could not be verified.",
+      "connectionFailed": "The server could not be reached to verify your sign-in session.",
+      "retry": "Try Again"
     }
   },
   "common": {
@@ -90,7 +94,10 @@
     },
     "errors": {
       "schemaError": "API returned unexpected patient schema formatting.",
-      "fetchFailed": "Failed to query patients records from central Node.js/SQL hub."
+      "fetchFailed": "Failed to query patients records from central Node.js/SQL hub.",
+      "updateFailed": "Could not update the patient's blood type.",
+      "deleteFailed": "Could not delete the patient record.",
+      "bloodTypeRequired": "Please select a blood type."
     },
     "stats": {
       "totalLabel": "Total Patients Registry",
@@ -104,25 +111,29 @@
     },
     "table": {
       "directoryTitle": "Patient Verification Directory",
-      "filterButton": "Filter Wards",
-      "exportButton": "Export Records",
+      "total": "Total patients: {{count}}",
       "loading": "Loading secure SQL Server patient datasets...",
       "retry": "Retry Database Query",
       "noResults": "No patients matched search criteria: \"{{term}}\"",
-      "noResultsHint": "Please try searching by name, record ID, or exact blood group.",
-      "yearsCount": "{{count}} yrs",
+      "unknownBloodType": "Not specified",
       "footerCount": "Showing {{filtered}} of {{total}} authenticated patient profiles",
-      "prev": "Pre",
-      "next": "Next",
       "cols": {
-        "demographics": "Patient Name / Demographics",
-        "chartId": "Chart ID Number",
-        "ward": "Ward / Specialization",
-        "contact": "Email / Address",
-        "age": "Birth / Age",
-        "vitals": "Vitals State",
-        "action": "Action"
+        "patientId": "Patient ID",
+        "userId": "User ID",
+        "bloodType": "Blood Type",
+        "action": "Actions"
       }
+    },
+    "actions": {
+      "editBloodType": "Edit blood type",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete patient"
+    },
+    "notifications": {
+      "created": "Patient added successfully.",
+      "updated": "Patient blood type updated.",
+      "deleted": "Patient record deleted."
     },
     "status": {
       "stable": "Stable",
@@ -158,6 +169,8 @@
       "medical": "Lab / Hematological Record"
     },
     "form": {
+      "userIdLabel": "User ID",
+      "userIdPlaceholder": "Enter user ID",
       "usernameLabel": "System Username",
       "usernamePlaceholder": "e.g. jdoe_med",
       "passwordLabel": "Default Access Password",
@@ -203,6 +216,11 @@
     "noAppointments": "No appointments scheduled for the selected period.",
     "form": {
       "title": "Book Appointment",
+      "patientIdLabel": "Patient ID",
+      "patientIdPlaceholder": "Enter patient ID",
+      "doctorIdLabel": "Doctor ID",
+      "doctorIdPlaceholder": "Enter doctor ID",
+      "dateLabel": "Appointment Date and Time",
       "patientNameLabel": "Patient Full Name",
       "patientNamePlaceholder": "e.g. Jonathan Doe",
       "selectDoctorPlaceholder": "Select Assigned Physician",
@@ -211,14 +229,26 @@
       "saveButton": "Save Appointment"
     },
     "table": {
+      "title": "Scheduled Appointments",
+      "total": "Total appointments: {{count}}",
+      "appointmentId": "Appointment ID",
+      "patientId": "Patient ID",
+      "doctorId": "Doctor ID",
       "patientName": "Patient Name",
       "doctor": "Assigned Physician",
       "date": "Date & Time",
       "department": "Medical Department",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "editStatus": "Change status for appointment {{id}}",
+      "deleteAppointment": "Delete appointment {{id}}",
+      "invalidDate": "Invalid date",
+      "retry": "Reload appointments",
+      "footer": "Appointments currently recorded in the system."
     },
     "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
       "confirmed": "Confirmed",
       "pending": "Pending",
       "cancelled": "Cancelled"
@@ -226,10 +256,15 @@
     "errors": {
       "requiredFields": "Please fill in all required fields.",
       "fetchFailed": "Failed to load appointments from server.",
-      "saveFailed": "Failed to save appointment. Please try again."
+      "schemaError": "The server returned appointments in an unexpected format.",
+      "saveFailed": "Failed to save appointment. Please try again.",
+      "updateFailed": "Failed to update appointment status.",
+      "deleteFailed": "Failed to delete appointment."
     },
     "notifications": {
-      "saved": "Appointment scheduled successfully."
+      "saved": "Appointment scheduled successfully.",
+      "updated": "Appointment status updated successfully.",
+      "deleted": "Appointment deleted successfully."
     }
   },
   "medicalRecords": {
@@ -239,6 +274,61 @@
     "aiReport": "AI Diagnostic Report",
     "aiSubtitle": "Instant AI insight generated from recent clinical lab charts and vitals data.",
     "generatingAi": "Processing data and generating intelligent medical report...",
+    "form": {
+      "title": "Add Medical Record",
+      "patientId": "Patient ID",
+      "patientIdPlaceholder": "Enter patient ID",
+      "doctorId": "Doctor ID",
+      "doctorIdPlaceholder": "Enter doctor ID",
+      "diagnosis": "Diagnosis",
+      "diagnosisPlaceholder": "Enter the medical diagnosis",
+      "treatmentPlan": "Treatment Plan",
+      "treatmentPlanPlaceholder": "Enter prescribed treatment or medications",
+      "xRayImagePath": "X-ray Image Path",
+      "xRayImagePathPlaceholder": "Enter the X-ray image path (optional)",
+      "save": "Save Record"
+    },
+    "table": {
+      "title": "Medical Records",
+      "total": "Total Records",
+      "recordId": "Record ID",
+      "patientId": "Patient ID",
+      "doctorId": "Doctor ID",
+      "actions": "Actions",
+      "loading": "Loading medical records...",
+      "noRecords": "There are no medical records to display.",
+      "privacyNotice": "Medical records are subject to internal auditing protocols."
+    },
+    "board": {
+      "title": "Intelligent Medical Board Results",
+      "consult": "Consult the Smart Board",
+      "clinicalLoading": "The medical board is in session... Analyzing the case clinically.",
+      "diagnostician": "Diagnostic Agent",
+      "safetyAuditor": "Medication Safety Agent",
+      "chiefOfBoard": "Chief of the Board",
+      "differentials": "Differential Diagnoses",
+      "drugWarnings": "Drug Warnings",
+      "agreementScore": "Agreement Score",
+      "consensusSummary": "Consensus Summary",
+      "finalRecommendation": "Final Recommendation",
+      "suggestedLabTests": "Suggested Lab Tests",
+      "approveReport": "Approve Report",
+      "approved": "Report Approved",
+      "noItems": "No items."
+    },
+    "errors": {
+      "fetchFailed": "Failed to load medical records from the server.",
+      "schemaError": "The server returned medical records in an unexpected format.",
+      "invalidIds": "Enter a positive whole number for both patient and doctor IDs.",
+      "saveFailed": "Failed to save the medical record. Please try again.",
+      "consultFailed": "The medical board consultation failed. Please try again.",
+      "approveFailed": "Failed to approve the recommendation and save it to the medical record.",
+      "reportMissing": "The report does not contain a final recommendation to approve."
+    },
+    "notifications": {
+      "recordSaved": "Medical record saved successfully.",
+      "reportApproved": "The board recommendation was approved and saved to the treatment plan."
+    },
     "sections": {
       "history": "Past Medical History",
       "diagnoses": "Current Diagnoses",
