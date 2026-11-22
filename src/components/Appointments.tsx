@@ -27,8 +27,13 @@ interface AppointmentPayload {
   PatientID: number;
   DoctorID: number;
   AppointmentDate: string;
-  Status: string;
+  Status: AppointmentStatus;
 }
+
+type AppointmentStatus = "Scheduled" | "Completed" | "Cancelled";
+
+const isAppointmentStatus = (value: string): value is AppointmentStatus =>
+  value === "Scheduled" || value === "Completed" || value === "Cancelled";
 
 const isAppointmentRecord = (value: unknown): value is AppointmentRecord => {
   if (!value || typeof value !== "object") return false;
@@ -52,13 +57,10 @@ const isAppointmentRecord = (value: unknown): value is AppointmentRecord => {
 const getAppointmentKey = (appointmentId: AppointmentRecord["AppointmentID"]) =>
   String(appointmentId);
 
-const appointmentStatuses = [
+const appointmentStatuses: AppointmentStatus[] = [
   "Scheduled",
-  "Pending",
-  "Confirmed",
   "Completed",
   "Cancelled",
-  "In Progress",
 ];
 
 export default function Appointments({ user }: AppointmentsProps) {
@@ -75,7 +77,7 @@ export default function Appointments({ user }: AppointmentsProps) {
   const [patientId, setPatientId] = useState("");
   const [doctorId, setDoctorId] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
-  const [status, setStatus] = useState("Pending");
+  const [status, setStatus] = useState<AppointmentStatus>("Scheduled");
   const [workingAppointmentId, setWorkingAppointmentId] = useState<string | null>(null);
 
   const fetchAppointments = async () => {
@@ -151,10 +153,16 @@ export default function Appointments({ user }: AppointmentsProps) {
       return;
     }
 
+    const parsedAppointmentDate = new Date(appointmentDate);
+    if (Number.isNaN(parsedAppointmentDate.getTime())) {
+      setActionError("appointments.errors.invalidDate");
+      return;
+    }
+
     const payload: AppointmentPayload = {
       PatientID: parsedPatientId,
       DoctorID: parsedDoctorId,
-      AppointmentDate: new Date(appointmentDate).toISOString(),
+      AppointmentDate: parsedAppointmentDate.toISOString(),
       Status: status,
     };
 
@@ -173,7 +181,7 @@ export default function Appointments({ user }: AppointmentsProps) {
       setPatientId("");
       setDoctorId("");
       setAppointmentDate("");
-      setStatus("Pending");
+      setStatus("Scheduled");
       showNotification("appointments.notifications.saved");
     } catch (error) {
       console.error("Failed to create appointment:", error);
@@ -183,7 +191,7 @@ export default function Appointments({ user }: AppointmentsProps) {
 
   const handleStatusChange = async (
     appointment: AppointmentRecord,
-    nextStatus: string,
+    nextStatus: AppointmentStatus,
   ) => {
     const appointmentKey = getAppointmentKey(appointment.AppointmentID);
     const payload: AppointmentPayload = {
@@ -379,7 +387,11 @@ export default function Appointments({ user }: AppointmentsProps) {
               <select
                 id="appointment-status"
                 value={status}
-                onChange={(event) => setStatus(event.target.value)}
+                onChange={(event) => {
+                  if (isAppointmentStatus(event.target.value)) {
+                    setStatus(event.target.value);
+                  }
+                }}
                 className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
               >
                 {appointmentStatuses.map((appointmentStatus) => (
@@ -493,9 +505,11 @@ export default function Appointments({ user }: AppointmentsProps) {
                             })}
                             value={appointment.Status}
                             disabled={isWorking || Boolean(workingAppointmentId)}
-                            onChange={(event) =>
-                              void handleStatusChange(appointment, event.target.value)
-                            }
+                            onChange={(event) => {
+                              if (isAppointmentStatus(event.target.value)) {
+                                void handleStatusChange(appointment, event.target.value);
+                              }
+                            }}
                             className={`rounded-full border px-3 py-1 text-xs font-bold outline-none disabled:opacity-60 ${getStatusStyle(appointment.Status)}`}
                           >
                             {!appointmentStatuses.some(

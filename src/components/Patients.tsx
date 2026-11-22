@@ -69,6 +69,13 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
     );
   }, [patients, searchTerm]);
 
+  const getPatientName = (patient: PatientRecord) => {
+    const firstAndLastName = [patient.FirstName, patient.LastName]
+      .filter((name): name is string => typeof name === "string" && name.trim() !== "")
+      .join(" ");
+    return patient.PatientName?.trim() || firstAndLastName;
+  };
+
   const showNotification = (messageKey: string) => {
     setNotification(messageKey);
     window.setTimeout(() => setNotification(null), 4000);
@@ -237,7 +244,13 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                     {t("patients.table.cols.patientName")}
                   </th>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
-                    {t("patients.table.cols.userId")}
+                    {t("patients.table.cols.email")}
+                  </th>
+                  <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                    {t("patients.table.cols.phone")}
+                  </th>
+                  <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
+                    {t("patients.table.cols.dateOfBirth")}
                   </th>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
                     {t("patients.table.cols.bloodType")}
@@ -255,10 +268,10 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                   return (
                     <tr key={patientKey} className="transition-colors hover:bg-primary/5">
                       <td className="px-6 py-4 text-start font-mono text-sm font-bold text-primary">
-                        {patient.PatientName?.trim() ? (
+                        {getPatientName(patient) ? (
                           <span className="inline-flex flex-wrap items-baseline gap-1.5">
                             <span dir="auto" className="font-sans text-on-surface">
-                              {patient.PatientName}
+                              {getPatientName(patient)}
                             </span>
                             <span>#{patient.PatientID}</span>
                           </span>
@@ -267,7 +280,13 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                         )}
                       </td>
                       <td className="px-6 py-4 text-start font-semibold text-on-surface">
-                        {patient.UserID}
+                        <span dir="auto">{patient.Email || t("patients.table.notProvided")}</span>
+                      </td>
+                      <td className="px-6 py-4 text-start font-semibold text-on-surface">
+                        <span dir="auto">{patient.Phone || t("patients.table.notProvided")}</span>
+                      </td>
+                      <td className="px-6 py-4 text-start font-semibold text-on-surface">
+                        {patient.DateOfBirth || t("patients.table.notProvided")}
                       </td>
                       <td className="px-6 py-4 text-start">
                         {isEditing ? (

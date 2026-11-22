@@ -43,32 +43,94 @@ const getApiError = (error: unknown): string | null => {
 };
 
 const bloodTypes = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+const inputClassName =
+  "w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary";
+
+interface PatientFormData {
+  FirstName: string;
+  LastName: string;
+  Username: string;
+  Email: string;
+  Password: string;
+  DateOfBirth: string;
+  Gender: string;
+  Address: string;
+  BloodType: string;
+}
+
+interface PatientCreatePayload extends Omit<PatientFormData, "Gender"> {
+  Gender: "Male" | "Female";
+}
+
+const initialFormData: PatientFormData = {
+  FirstName: "",
+  LastName: "",
+  Username: "",
+  Email: "",
+  Password: "",
+  DateOfBirth: "",
+  Gender: "",
+  Address: "",
+  BloodType: "",
+};
+
+const patientTextFields: Array<{
+  name: keyof PatientFormData;
+  type: "text" | "email" | "password" | "date";
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+}> = [
+  { name: "FirstName", type: "text", maxLength: 74 },
+  { name: "LastName", type: "text", maxLength: 75 },
+  { name: "Username", type: "text", minLength: 3, maxLength: 50, pattern: "[A-Za-z0-9]+" },
+  { name: "Email", type: "email", maxLength: 100 },
+  { name: "Password", type: "password", minLength: 8 },
+  { name: "DateOfBirth", type: "date" },
+  { name: "Address", type: "text", maxLength: 255 },
+];
 
 export default function PatientModal({
   onClose,
   onSaveSuccess,
 }: PatientModalProps) {
   const { t, i18n } = useTranslation();
-  const [userId, setUserId] = useState("");
-  const [bloodType, setBloodType] = useState("");
+  const [formData, setFormData] = useState<PatientFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const updateField = (field: keyof PatientFormData, value: string) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const parsedUserId = Number(userId);
-    if (!Number.isInteger(parsedUserId) || parsedUserId <= 0 || !bloodType) {
+    if (
+      Object.entries(formData).some(
+        ([field, value]) => field !== "Address" && !value.trim(),
+      ) ||
+      (formData.Gender !== "Male" && formData.Gender !== "Female")
+    ) {
       setErrorMsg(t("patientModal.errors.requiredFields"));
       return;
     }
 
+    const payload: PatientCreatePayload = {
+      FirstName: formData.FirstName.trim(),
+      LastName: formData.LastName.trim(),
+      Email: formData.Email,
+      Username: formData.Username,
+      Password: formData.Password,
+      DateOfBirth: formData.DateOfBirth,
+      Gender: formData.Gender,
+      Address: formData.Address,
+      BloodType: formData.BloodType,
+    };
+
     setLoading(true);
     setErrorMsg(null);
     try {
-      const response = await apiClient.post("/patients", {
-        UserID: parsedUserId,
-        BloodType: bloodType,
-      });
+      const response = await apiClient.post("/patients", payload);
       const createdPatient: unknown = response.data?.data;
       onSaveSuccess(isPatientRecord(createdPatient) ? createdPatient : null);
     } catch (error) {
@@ -113,41 +175,70 @@ export default function PatientModal({
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label htmlFor="patient-user-id" className="block text-sm font-semibold text-on-surface-variant">
-              {t("patientModal.form.userIdLabel")}
-            </label>
-            <input
-              id="patient-user-id"
-              type="number"
-              min="1"
-              step="1"
-              required
-              value={userId}
-              onChange={(event) => setUserId(event.target.value)}
-              placeholder={t("patientModal.form.userIdPlaceholder")}
-              className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary"
-            />
-          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {patientTextFields.map(({ name, type, minLength, maxLength, pattern }) => (
+              <div key={name} className="space-y-1.5">
+                <label
+                  htmlFor={`patient-${name}`}
+                  className="block text-sm font-semibold text-on-surface-variant"
+                >
+                  {t(`patientModal.form.${name}Label`)}
+                </label>
+                <input
+                  id={`patient-${name}`}
+                  name={name}
+                  type={type}
+                  required={name !== "Address"}
+                  minLength={minLength}
+                  maxLength={maxLength}
+                  pattern={pattern}
+                  autoComplete={name === "Password" ? "new-password" : undefined}
+                  value={formData[name]}
+                  onChange={(event) => updateField(name, event.target.value)}
+                  placeholder={t(`patientModal.form.${name}Placeholder`)}
+                  className={inputClassName}
+                />
+              </div>
+            ))}
 
-          <div className="space-y-1.5">
-            <label htmlFor="patient-blood-type" className="block text-sm font-semibold text-on-surface-variant">
-              {t("patientModal.form.bloodTypeLabel")}
-            </label>
-            <select
-              id="patient-blood-type"
-              required
-              value={bloodType}
-              onChange={(event) => setBloodType(event.target.value)}
-              className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary"
-            >
-              <option value="">{t("patientModal.form.bloodTypePlaceholder")}</option>
-              {bloodTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
+            <div className="space-y-1.5">
+              <label htmlFor="patient-Gender" className="block text-sm font-semibold text-on-surface-variant">
+                {t("patientModal.form.GenderLabel")}
+              </label>
+              <select
+                id="patient-Gender"
+                name="Gender"
+                required
+                value={formData.Gender}
+                onChange={(event) => updateField("Gender", event.target.value)}
+                className={inputClassName}
+              >
+                <option value="">{t("patientModal.form.GenderPlaceholder")}</option>
+                <option value="Male">{t("patientModal.gender.male")}</option>
+                <option value="Female">{t("patientModal.gender.female")}</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="patient-BloodType" className="block text-sm font-semibold text-on-surface-variant">
+                {t("patientModal.form.BloodTypeLabel")}
+              </label>
+              <select
+                id="patient-BloodType"
+                name="BloodType"
+                required
+                value={formData.BloodType}
+                onChange={(event) => updateField("BloodType", event.target.value)}
+                className={inputClassName}
+              >
+                <option value="">{t("patientModal.form.BloodTypePlaceholder")}</option>
+                {bloodTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <footer className="flex justify-end gap-3 border-t border-outline-variant pt-5">

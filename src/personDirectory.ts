@@ -30,6 +30,9 @@ export const parseDirectoryPeople = (
       person[nameField],
       person.FullName,
       person.Name,
+      [person.FirstName, person.LastName]
+        .filter((part): part is string => typeof part === "string" && part.trim() !== "")
+        .join(" "),
       nestedUser?.FullName,
       nestedUser?.Name,
     ];
