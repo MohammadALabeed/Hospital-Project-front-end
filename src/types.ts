@@ -36,6 +36,7 @@ export interface Patient {
 export interface PatientRecord {
   PatientID: number | string;
   UserID: number | string;
+  PatientName?: string | null;
   BloodType: string | null;
   [key: string]: unknown;
 }

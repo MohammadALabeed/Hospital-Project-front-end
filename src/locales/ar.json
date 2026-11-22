@@ -1,7 +1,7 @@
 {
   "app": {
     "session": {
-      "verifying": "جاري التحقق من شهادات HIPAA الأمنية والاتصال بالخادم...",
+      "verifying": "جارٍ التحقق من إعدادات الأمان والاتصال بالخادم...",
       "restoring": "جارٍ التحقق من جلسة تسجيل الدخول...",
       "verificationFailed": "تعذر التحقق من جلسة الدخول.",
       "connectionFailed": "تعذر الاتصال بالخادم للتحقق من جلسة الدخول.",
@@ -9,7 +9,8 @@
     }
   },
   "common": {
-    "languageEnglish": "English",
+    "brandName": "مركز ميد سنتر برو",
+    "languageEnglish": "الإنجليزية",
     "languageArabic": "العربية"
   },
   "login": {
@@ -43,7 +44,9 @@
     },
     "roles": {
       "admin": "مدير النظام",
-      "doctor": "طبيب ممارس",
+      "doctor": "طبيب",
+      "employee": "موظف",
+      "patient": "مريض",
       "staff": "طاقم طبي متاح"
     },
     "navbar": {
@@ -63,7 +66,7 @@
     "greetings": {
       "admin": "لوحة تحكم الإدارة العامة نشطة",
       "clinical": "سجل العيادات والمراجعين نشط",
-      "default": "Authorized Personnel Session"
+      "default": "جلسة دخول للموظفين المصرح لهم"
     },
     "buttons": {
       "viewPatients": "سجل المراجعين",
@@ -72,10 +75,11 @@
     "stats": {
       "patientsTitle": "إجمالي عدد المرضى الكلي",
       "patientsSubtitle": "إجمالي المرضى المسجلين داخل المستشفى",
-      "nursesTitle": "إجمالي عدد الممرضين",
-      "nursesSubtitle": "طاقم التمريض المتاح للخدمة",
+      "employeesTitle": "إجمالي عدد الموظفين",
+      "employeesSubtitle": "إجمالي الموظفين المسجلين في المستشفى",
       "doctorsTitle": "إجمالي عدد الدكاترة",
-      "doctorsSubtitle": "الأطباء الطبيون النشطون في الطاقم"
+      "doctorsSubtitle": "إجمالي الأطباء المسجلين في المستشفى",
+      "loading": "جارٍ تحميل الإحصائيات"
     },
     "charts": {
       "title": "معدل تدفق المرضى الأسبوعي",
@@ -90,11 +94,14 @@
       "registerButton": "تسجيل مريض جديد"
     },
     "notifications": {
-      "registered": "تم تسجيل المريض {{name}} بنجاح! الرقم التعريفي المعين: {{id}}"
+      "registered": "تم تسجيل المريض {{name}} بنجاح! الرقم التعريفي المعين: {{id}}",
+      "created": "تمت إضافة المريض بنجاح.",
+      "updated": "تم تحديث فصيلة دم المريض.",
+      "deleted": "تم حذف سجل المريض."
     },
     "errors": {
-      "schemaError": "أعادت واجهة برمجة التطبيقات (API) تنسيقاً غير متوقع لبيانات المرضى.",
-      "fetchFailed": "فشل الاستعلام عن سجلات المرضى من مركز قاعدة بيانات Node.js/SQL.",
+      "schemaError": "أعاد الخادم بيانات المرضى بتنسيق غير متوقع.",
+      "fetchFailed": "فشل جلب سجلات المرضى من قاعدة البيانات.",
       "updateFailed": "تعذر تحديث فصيلة دم المريض.",
       "deleteFailed": "تعذر حذف سجل المريض.",
       "bloodTypeRequired": "يرجى اختيار فصيلة الدم."
@@ -112,13 +119,14 @@
     "table": {
       "directoryTitle": "دليل التحقق من هوية المرضى",
       "total": "إجمالي المرضى: {{count}}",
-      "loading": "جاري تحميل بيانات المرضى الآمنة من SQL Server...",
+      "loading": "جارٍ تحميل بيانات المرضى...",
       "retry": "إعادة محاولة الاستعلام",
       "noResults": "لا توجد سجلات مرضى مطابقة للبحث: \"{{term}}\"",
       "unknownBloodType": "غير محددة",
       "footerCount": "عرض {{filtered}} من أصل {{total}} من ملفات المرضى الموثقة",
       "cols": {
         "patientId": "رقم المريض",
+        "patientName": "المريض",
         "userId": "رقم المستخدم",
         "bloodType": "فصيلة الدم",
         "action": "الإجراءات"
@@ -129,11 +137,6 @@
       "save": "حفظ",
       "cancel": "إلغاء",
       "delete": "حذف المريض"
-    },
-    "notifications": {
-      "created": "تمت إضافة المريض بنجاح.",
-      "updated": "تم تحديث فصيلة دم المريض.",
-      "deleted": "تم حذف سجل المريض."
     },
     "status": {
       "stable": "مستقر",
@@ -161,7 +164,7 @@
     "errors": {
       "requiredFields": "يرجى ملء جميع الحقول الشخصية والسريرية المطلوبة.",
       "saveFailed": "فشل في كتابة ملف المريض في الدليل المركزي.",
-      "networkError": "خطأ في الشبكة أثناء الاتصال بمنسق قاعدة بيانات SQL."
+      "networkError": "خطأ في الشبكة أثناء الاتصال بقاعدة البيانات."
     },
     "sections": {
       "account": "بيانات الحساب (اختياري)",
@@ -172,13 +175,13 @@
       "userIdLabel": "رقم المستخدم",
       "userIdPlaceholder": "أدخل رقم المستخدم",
       "usernameLabel": "اسم المستخدم في النظام",
-      "usernamePlaceholder": "مثال: jdoe_med",
+      "usernamePlaceholder": "مثال: مستخدم١٢٣",
       "passwordLabel": "كلمة المرور الافتراضية",
       "passwordPlaceholder": "••••••••",
       "fullNameLabel": "الاسم الكامل للمريض",
       "fullNamePlaceholder": "جون دو",
       "emailLabel": "البريد الإلكتروني",
-      "emailPlaceholder": "example@domain.com",
+      "emailPlaceholder": "اسم@مثال.شبكة",
       "dobLabel": "تاريخ الميلاد",
       "addressLabel": "العنوان السكني الحالي",
       "addressPlaceholder": "123 الطريق الطبي، جناح 400، نيويورك 10001",
@@ -212,14 +215,19 @@
     "title": "إدارة المواعيد الطبية",
     "subtitle": "جدولة وتأكيد مواعيد العيادات الخارجية والعمليات الجراحية المخطط لها.",
     "scheduleButton": "حجز موعد جديد",
-    "loading": "جاري جلب المواعيد المقررة من خادم SQL...",
+    "loading": "جارٍ جلب المواعيد المقررة من الخادم...",
     "noAppointments": "لا توجد مواعيد مجدولة للفترة المحددة.",
     "form": {
       "title": "جدولة موعد جديد",
       "patientIdLabel": "رقم المريض",
       "patientIdPlaceholder": "أدخل رقم المريض",
+      "selectPatientPlaceholder": "اختر المريض",
+      "loadingPatients": "جارٍ تحميل المرضى...",
+      "noPatientsAvailable": "لا يوجد مرضى متاحون",
       "doctorIdLabel": "رقم الطبيب",
       "doctorIdPlaceholder": "أدخل رقم الطبيب",
+      "loadingDoctors": "جارٍ تحميل الأطباء...",
+      "noDoctorsAvailable": "لا يوجد أطباء متاحون",
       "dateLabel": "تاريخ ووقت الموعد",
       "patientNameLabel": "اسم المريض الكامل",
       "patientNamePlaceholder": "مثال: جوناثان دو",
@@ -251,12 +259,14 @@
       "completed": "مكتمل",
       "confirmed": "مؤكد",
       "pending": "قيد الانتظار",
-      "cancelled": "ملغي"
+      "cancelled": "ملغي",
+      "inprogress": "قيد التنفيذ"
     },
     "errors": {
       "requiredFields": "يرجى ملء جميع الحقول المطلوبة لتأكيد حجز الموعد.",
       "fetchFailed": "فشل في استرداد بيانات المواعيد من الخادم الرئيسي.",
       "schemaError": "أعاد الخادم بيانات المواعيد بتنسيق غير متوقع.",
+      "directoryFetchFailed": "تعذر تحميل قوائم المرضى والأطباء.",
       "saveFailed": "فشل حفظ الموعد الطبي، يرجى المحاولة مرة أخرى.",
       "updateFailed": "تعذر تحديث حالة الموعد.",
       "deleteFailed": "تعذر حذف الموعد."
@@ -278,8 +288,14 @@
       "title": "إضافة سجل طبي",
       "patientId": "رقم المريض",
       "patientIdPlaceholder": "أدخل رقم المريض",
+      "selectPatientPlaceholder": "اختر المريض",
+      "loadingPatients": "جارٍ تحميل المرضى...",
+      "noPatientsAvailable": "لا يوجد مرضى متاحون",
       "doctorId": "رقم الطبيب",
       "doctorIdPlaceholder": "أدخل رقم الطبيب",
+      "selectDoctorPlaceholder": "اختر الطبيب",
+      "loadingDoctors": "جارٍ تحميل الأطباء...",
+      "noDoctorsAvailable": "لا يوجد أطباء متاحون",
       "diagnosis": "التشخيص",
       "diagnosisPlaceholder": "أدخل التشخيص الطبي",
       "treatmentPlan": "الخطة العلاجية",
@@ -294,20 +310,52 @@
       "recordId": "رقم السجل",
       "patientId": "رقم المريض",
       "doctorId": "رقم الطبيب",
+      "patientName": "المريض",
+      "doctorName": "الطبيب",
       "actions": "الإجراءات",
       "loading": "جاري تحميل السجلات الطبية...",
       "noRecords": "لا توجد سجلات طبية لعرضها.",
       "privacyNotice": "تخضع السجلات الطبية لبروتوكولات التدقيق الداخلي."
     },
+    "prescriptions": {
+      "button": "الوصفات الطبية",
+      "title": "وصفات السجل رقم #{{id}}",
+      "loading": "جارٍ تحميل الوصفات الطبية...",
+      "empty": "لا توجد وصفات طبية مضافة لهذا السجل.",
+      "medication": "الدواء",
+      "medicationPlaceholder": "أدخل اسم الدواء",
+      "dosage": "الجرعة",
+      "dosagePlaceholder": "أدخل الجرعة",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "تعليمات أو ملاحظات اختيارية",
+      "add": "إضافة وصفة طبية",
+      "created": "تمت إضافة الوصفة الطبية بنجاح.",
+      "loadFailed": "تعذر تحميل وصفات هذا السجل.",
+      "saveFailed": "تعذر حفظ الوصفة الطبية. يرجى المحاولة مرة أخرى.",
+      "requiredFields": "أدخل اسم الدواء والجرعة.",
+      "invalidRecord": "معرّف هذا السجل الطبي غير صالح.",
+      "retry": "إعادة المحاولة"
+    },
     "board": {
       "title": "نتائج المجلس الطبي الذكي",
       "consult": "استشارة المجلس الذكي",
+      "historyButton": "السجل السابق",
+      "historyLoading": "جارٍ تحميل الاستشارات السابقة...",
+      "historyEmpty": "لا توجد استشارات سابقة لهذا السجل.",
+      "historyFailed": "تعذر تحميل سجل الاستشارات السابقة.",
+      "historyItem": "الاستشارة {{number}} · {{date}}",
+      "historySelected": "معروضة",
+      "historyReadOnly": "عرض استشارة سابقة للقراءة فقط.",
+      "unknownDate": "تاريخ غير متوفر",
       "clinicalLoading": "المجلس الطبي قيد الانعقاد... جارٍ تحليل الحالة سريرياً.",
       "diagnostician": "الوكيل التشخيصي",
       "safetyAuditor": "وكيل سلامة الأدوية",
+      "pharmacologist": "وكيل سلامة الأدوية",
       "chiefOfBoard": "رئيس المجلس",
+      "consensusAgent": "وكيل توافق المجلس",
       "differentials": "التشخيصات التفريقية",
       "drugWarnings": "تحذيرات الأدوية",
+      "noDrugWarnings": "لم يتم رصد تحذيرات دوائية.",
       "agreementScore": "نسبة التوافق",
       "consensusSummary": "ملخص التوافق",
       "finalRecommendation": "التوصية النهائية",
@@ -318,6 +366,7 @@
     },
     "errors": {
       "fetchFailed": "تعذر تحميل السجلات الطبية من الخادم.",
+      "directoryFetchFailed": "تعذر تحميل قوائم المرضى والأطباء.",
       "schemaError": "أعاد الخادم بيانات سجلات طبية بتنسيق غير متوقع.",
       "invalidIds": "يجب إدخال رقم صحيح موجب للمريض والطبيب.",
       "saveFailed": "تعذر حفظ السجل الطبي. يرجى المحاولة مرة أخرى.",

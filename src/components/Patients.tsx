@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Plus, ShieldAlert, Trash2, Users, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
-import { PatientRecord } from "../types.js";
+import { RoleID, type PatientRecord, type UserSession } from "../types.js";
 import PatientModal from "./PatientModal.jsx";
 
 interface PatientsProps {
+  user: UserSession;
   searchTerm: string;
 }
 
@@ -15,14 +16,18 @@ const isPatientRecord = (value: unknown): value is PatientRecord => {
   return (
     (typeof patient.PatientID === "number" || typeof patient.PatientID === "string") &&
     (typeof patient.UserID === "number" || typeof patient.UserID === "string") &&
+    (patient.PatientName === undefined ||
+      typeof patient.PatientName === "string" ||
+      patient.PatientName === null) &&
     (typeof patient.BloodType === "string" || patient.BloodType === null)
   );
 };
 
 const getPatientKey = (patientId: PatientRecord["PatientID"]) => String(patientId);
 
-export default function Patients({ searchTerm }: PatientsProps) {
+export default function Patients({ user, searchTerm }: PatientsProps) {
   const { t, i18n } = useTranslation();
+  const isAdmin = user.roleId === RoleID.Admin;
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,13 +44,13 @@ export default function Patients({ searchTerm }: PatientsProps) {
     try {
       const response = await apiClient.get("/patients");
       if (!Array.isArray(response.data) || !response.data.every(isPatientRecord)) {
-        setErrorMsg(t("patients.errors.schemaError"));
+        setErrorMsg("patients.errors.schemaError");
         return;
       }
       setPatients(response.data);
     } catch (error) {
       console.error("Failed to retrieve patients:", error);
-      setErrorMsg(t("patients.errors.fetchFailed"));
+      setErrorMsg("patients.errors.fetchFailed");
     } finally {
       setLoading(false);
     }
@@ -64,8 +69,8 @@ export default function Patients({ searchTerm }: PatientsProps) {
     );
   }, [patients, searchTerm]);
 
-  const showNotification = (message: string) => {
-    setNotification(message);
+  const showNotification = (messageKey: string) => {
+    setNotification(messageKey);
     window.setTimeout(() => setNotification(null), 4000);
   };
 
@@ -82,7 +87,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
       void fetchPatients();
     }
     setShowModal(false);
-    showNotification(t("patients.notifications.created"));
+    showNotification("patients.notifications.created");
   };
 
   const beginEditing = (patient: PatientRecord) => {
@@ -95,7 +100,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
     const patientKey = getPatientKey(patient.PatientID);
     const bloodType = editingBloodType.trim();
     if (!bloodType) {
-      setActionError(t("patients.errors.bloodTypeRequired"));
+      setActionError("patients.errors.bloodTypeRequired");
       return;
     }
 
@@ -116,16 +121,17 @@ export default function Patients({ searchTerm }: PatientsProps) {
         ),
       );
       setEditingPatientId(null);
-      showNotification(t("patients.notifications.updated"));
+      showNotification("patients.notifications.updated");
     } catch (error) {
       console.error("Failed to update patient blood type:", error);
-      setActionError(t("patients.errors.updateFailed"));
+      setActionError("patients.errors.updateFailed");
     } finally {
       setWorkingPatientId(null);
     }
   };
 
   const handleDeletePatient = async (patient: PatientRecord) => {
+    if (!isAdmin) return;
     const patientKey = getPatientKey(patient.PatientID);
     setWorkingPatientId(patientKey);
     setActionError(null);
@@ -137,10 +143,10 @@ export default function Patients({ searchTerm }: PatientsProps) {
         ),
       );
       if (editingPatientId === patientKey) setEditingPatientId(null);
-      showNotification(t("patients.notifications.deleted"));
+      showNotification("patients.notifications.deleted");
     } catch (error) {
       console.error("Failed to delete patient:", error);
-      setActionError(t("patients.errors.deleteFailed"));
+      setActionError("patients.errors.deleteFailed");
     } finally {
       setWorkingPatientId(null);
     }
@@ -159,7 +165,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
 
   return (
     <div
-      dir={i18n.language === "ar" ? "rtl" : "ltr"}
+      dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
       className="space-y-8 animate-in fade-in duration-300"
     >
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -182,14 +188,14 @@ export default function Patients({ searchTerm }: PatientsProps) {
       {notification && (
         <div role="status" className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-          <span>{notification}</span>
+          <span>{t(notification)}</span>
         </div>
       )}
 
       {(errorMsg || actionError) && (
         <div role="alert" className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-50 p-4 text-sm font-semibold text-rose-800">
           <ShieldAlert className="h-5 w-5 shrink-0 text-rose-600" />
-          <span>{actionError ?? errorMsg}</span>
+          <span>{t(actionError ?? errorMsg ?? "patients.errors.fetchFailed")}</span>
         </div>
       )}
 
@@ -228,7 +234,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
               <thead className="border-b border-outline-variant bg-slate-50">
                 <tr>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
-                    {t("patients.table.cols.patientId")}
+                    {t("patients.table.cols.patientName")}
                   </th>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
                     {t("patients.table.cols.userId")}
@@ -249,7 +255,16 @@ export default function Patients({ searchTerm }: PatientsProps) {
                   return (
                     <tr key={patientKey} className="transition-colors hover:bg-primary/5">
                       <td className="px-6 py-4 text-start font-mono text-sm font-bold text-primary">
-                        #{patient.PatientID}
+                        {patient.PatientName?.trim() ? (
+                          <span className="inline-flex flex-wrap items-baseline gap-1.5">
+                            <span dir="auto" className="font-sans text-on-surface">
+                              {patient.PatientName}
+                            </span>
+                            <span>#{patient.PatientID}</span>
+                          </span>
+                        ) : (
+                          `#${patient.PatientID}`
+                        )}
                       </td>
                       <td className="px-6 py-4 text-start font-semibold text-on-surface">
                         {patient.UserID}
@@ -257,7 +272,7 @@ export default function Patients({ searchTerm }: PatientsProps) {
                       <td className="px-6 py-4 text-start">
                         {isEditing ? (
                           <select
-                            aria-label={t("patients.table.editBloodType")}
+                            aria-label={t("patients.actions.editBloodType")}
                             value={editingBloodType}
                             onChange={(event) => setEditingBloodType(event.target.value)}
                             className="rounded-lg border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -309,15 +324,17 @@ export default function Patients({ searchTerm }: PatientsProps) {
                               <Pencil className="h-4 w-4" />
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => void handleDeletePatient(patient)}
-                            disabled={Boolean(workingPatientId)}
-                            aria-label={t("patients.actions.delete")}
-                            className="rounded-lg p-2 text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => void handleDeletePatient(patient)}
+                              disabled={Boolean(workingPatientId)}
+                              aria-label={t("patients.actions.delete")}
+                              className="rounded-lg p-2 text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -1,7 +1,28 @@
 import axios from "axios";
 
-// 1. ضبط الرابط الأساسي للباك إند (يفضل استخدام متغير بيئة مع قيمة افتراضية)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const configuredApiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+const getApiBaseUrl = (baseUrl: string): string => {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, "");
+  const pageHost = window.location.hostname;
+  if (pageHost !== "localhost" && pageHost !== "127.0.0.1") {
+    return normalizedBaseUrl;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedBaseUrl);
+    if (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") {
+      parsedUrl.hostname = pageHost;
+      return parsedUrl.toString().replace(/\/+$/, "");
+    }
+  } catch {
+    return normalizedBaseUrl;
+  }
+
+  return normalizedBaseUrl;
+};
+
+const API_BASE_URL = getApiBaseUrl(configuredApiBaseUrl);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

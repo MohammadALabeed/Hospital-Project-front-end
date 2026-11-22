@@ -9,6 +9,7 @@
     }
   },
   "common": {
+    "brandName": "MedCenter Pro",
     "languageEnglish": "English",
     "languageArabic": "العربية"
   },
@@ -42,8 +43,10 @@
       "logout": "Log Out Session"
     },
     "roles": {
-      "admin": "Admin",
+      "admin": "System Admin",
       "doctor": "Doctor",
+      "employee": "Employee",
+      "patient": "Patient",
       "staff": "Staff"
     },
     "navbar": {
@@ -72,10 +75,11 @@
     "stats": {
       "patientsTitle": "Total Patients",
       "patientsSubtitle": "Total registered patients in the hospital",
-      "nursesTitle": "Total Nurses",
-      "nursesSubtitle": "Nursing staff available for duty",
+      "employeesTitle": "Total Employees",
+      "employeesSubtitle": "Total employees registered at the hospital",
       "doctorsTitle": "Total Doctors",
-      "doctorsSubtitle": "Active medical doctors on staff"
+      "doctorsSubtitle": "Total doctors registered at the hospital",
+      "loading": "Loading statistics"
     },
     "charts": {
       "title": "Weekly Patient Inflow Traffic",
@@ -119,6 +123,7 @@
       "footerCount": "Showing {{filtered}} of {{total}} authenticated patient profiles",
       "cols": {
         "patientId": "Patient ID",
+        "patientName": "Patient",
         "userId": "User ID",
         "bloodType": "Blood Type",
         "action": "Actions"
@@ -218,8 +223,13 @@
       "title": "Book Appointment",
       "patientIdLabel": "Patient ID",
       "patientIdPlaceholder": "Enter patient ID",
+      "selectPatientPlaceholder": "Select a patient",
+      "loadingPatients": "Loading patients...",
+      "noPatientsAvailable": "No patients available",
       "doctorIdLabel": "Doctor ID",
       "doctorIdPlaceholder": "Enter doctor ID",
+      "loadingDoctors": "Loading doctors...",
+      "noDoctorsAvailable": "No doctors available",
       "dateLabel": "Appointment Date and Time",
       "patientNameLabel": "Patient Full Name",
       "patientNamePlaceholder": "e.g. Jonathan Doe",
@@ -251,12 +261,14 @@
       "completed": "Completed",
       "confirmed": "Confirmed",
       "pending": "Pending",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "inprogress": "In Progress"
     },
     "errors": {
       "requiredFields": "Please fill in all required fields.",
       "fetchFailed": "Failed to load appointments from server.",
       "schemaError": "The server returned appointments in an unexpected format.",
+      "directoryFetchFailed": "Unable to load patient and doctor lists.",
       "saveFailed": "Failed to save appointment. Please try again.",
       "updateFailed": "Failed to update appointment status.",
       "deleteFailed": "Failed to delete appointment."
@@ -278,8 +290,14 @@
       "title": "Add Medical Record",
       "patientId": "Patient ID",
       "patientIdPlaceholder": "Enter patient ID",
+      "selectPatientPlaceholder": "Select a patient",
+      "loadingPatients": "Loading patients...",
+      "noPatientsAvailable": "No patients available",
       "doctorId": "Doctor ID",
       "doctorIdPlaceholder": "Enter doctor ID",
+      "selectDoctorPlaceholder": "Select a doctor",
+      "loadingDoctors": "Loading doctors...",
+      "noDoctorsAvailable": "No doctors available",
       "diagnosis": "Diagnosis",
       "diagnosisPlaceholder": "Enter the medical diagnosis",
       "treatmentPlan": "Treatment Plan",
@@ -294,20 +312,52 @@
       "recordId": "Record ID",
       "patientId": "Patient ID",
       "doctorId": "Doctor ID",
+      "patientName": "Patient",
+      "doctorName": "Doctor",
       "actions": "Actions",
       "loading": "Loading medical records...",
       "noRecords": "There are no medical records to display.",
       "privacyNotice": "Medical records are subject to internal auditing protocols."
     },
+    "prescriptions": {
+      "button": "Prescriptions",
+      "title": "Prescriptions for record #{{id}}",
+      "loading": "Loading prescriptions...",
+      "empty": "No prescriptions have been added to this record.",
+      "medication": "Medication",
+      "medicationPlaceholder": "Enter medication name",
+      "dosage": "Dosage",
+      "dosagePlaceholder": "Enter dosage",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional instructions or notes",
+      "add": "Add prescription",
+      "created": "Prescription added successfully.",
+      "loadFailed": "Unable to load prescriptions for this record.",
+      "saveFailed": "Unable to save the prescription. Please try again.",
+      "requiredFields": "Enter both a medication and dosage.",
+      "invalidRecord": "This medical record has an invalid identifier.",
+      "retry": "Retry"
+    },
     "board": {
       "title": "Intelligent Medical Board Results",
       "consult": "Consult the Smart Board",
+      "historyButton": "Report History",
+      "historyLoading": "Loading previous consultations...",
+      "historyEmpty": "There are no previous consultations for this record.",
+      "historyFailed": "Failed to load consultation history.",
+      "historyItem": "Consultation {{number}} · {{date}}",
+      "historySelected": "Viewing",
+      "historyReadOnly": "Previous consultations are read-only.",
+      "unknownDate": "Date unavailable",
       "clinicalLoading": "The medical board is in session... Analyzing the case clinically.",
       "diagnostician": "Diagnostic Agent",
       "safetyAuditor": "Medication Safety Agent",
+      "pharmacologist": "Pharmacology Safety Agent",
       "chiefOfBoard": "Chief of the Board",
+      "consensusAgent": "Board Consensus Agent",
       "differentials": "Differential Diagnoses",
       "drugWarnings": "Drug Warnings",
+      "noDrugWarnings": "No medication warnings were identified.",
       "agreementScore": "Agreement Score",
       "consensusSummary": "Consensus Summary",
       "finalRecommendation": "Final Recommendation",
@@ -318,6 +368,7 @@
     },
     "errors": {
       "fetchFailed": "Failed to load medical records from the server.",
+      "directoryFetchFailed": "Unable to load patient and doctor lists.",
       "schemaError": "The server returned medical records in an unexpected format.",
       "invalidIds": "Enter a positive whole number for both patient and doctor IDs.",
       "saveFailed": "Failed to save the medical record. Please try again.",

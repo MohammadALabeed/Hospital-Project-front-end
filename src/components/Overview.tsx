@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Users,
   Activity,
   HeartPulse,
   ArrowRight,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
+import { apiClient } from "../api.js";
 
 // استيراد تيبات التحقق من البيانات الخاصة بالجلسة
 import { UserSession } from "../types.js";
@@ -18,24 +20,82 @@ interface OverviewProps {
   onNavigate: (tab: string) => void;
 }
 
+interface DashboardStats {
+  totalPatients: number;
+  totalEmployees: number;
+  totalDoctors: number;
+}
+
+const getStatCount = (value: unknown): number => {
+  const count = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(count) && count >= 0 ? count : 0;
+};
+
 // تفعيل دالة الترجمة ومعرفة اللغة الحالية للنظام
 export default function Overview({ user, onNavigate }: OverviewProps) {
-const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPatients: 0,
+    totalEmployees: 0,
+    totalDoctors: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        const response = await apiClient.get("/dashboard/stats");
+        if (isMounted) {
+          const data = response.data as Record<string, unknown> | null;
+          setStats({
+            totalPatients: getStatCount(data?.totalPatients),
+            totalEmployees: getStatCount(data?.totalEmployees),
+            totalDoctors: getStatCount(data?.totalDoctors),
+          });
+        }
+      } catch (error) {
+        console.error("Failed to retrieve dashboard statistics:", error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    void fetchStats();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   /* 1. منطق تخصيص الترحيب بناءً على صلاحية المستخدم (Role ID) */
   const getPersonalGreeting = () => {
     switch (user.roleId) {
       case 1:
-        return t("overview.greetings.admin", "Hospital Management Console"); // مدير
+        return t("overview.greetings.admin"); // مدير
       case 2:
-        return t("overview.greetings.clinical", "Clinical Registry Active"); // طبيب/طاقم طبي
+        return t("overview.greetings.clinical"); // طبيب/طاقم طبي
       default:
-        return t("overview.greetings.default", "Authorized Personnel Session"); // موظف عام
+        return t("overview.greetings.default"); // موظف عام
     }
   };
 
   // فحص ما إذا كانت اللغة الحالية هي العربية لتعديل اتجاه الواجهة
-  const isRtl = i18n.language === "ar";
+  const isRtl = i18n.language.startsWith("ar");
+
+  const renderStatCount = (count: number) =>
+    loading ? (
+      <span
+        className="inline-flex items-center gap-2 text-primary"
+        role="status"
+        aria-label={t("overview.stats.loading")}
+      >
+        <Loader2 className="h-7 w-7 animate-spin" aria-hidden="true" />
+        <span className="sr-only">{t("overview.stats.loading")}</span>
+      </span>
+    ) : (
+      count
+    );
 
   return (
     // تحديد اتجاه اللوحة (RTL للعربي و LTR للإنجليزي) مع تأثير حركي عند الدخول
@@ -48,17 +108,14 @@ const { t, i18n } = useTranslation();
       <div className="bg-linear-to-r from-primary to-primary-container text-white p-8 rounded-2xl shadow-xl relative overflow-hidden flex justify-between items-center">
         <div className="relative z-10 max-w-xl space-y-3">
           <span className="text-[10px] bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
-            {t("overview.badge", "System Dashboard")}
+            {t("overview.badge")}
           </span>
-          <h2 className="text-3xl font-bold tracking-tight text-white">
+          <h2 dir="auto" className="text-3xl font-bold tracking-tight text-white">
             {t("overview.welcome", { name: user.fullName })}
           </h2>
           <p className="text-sm text-sky-100/80 leading-relaxed">
             {getPersonalGreeting()} —{" "}
-            {t(
-              "overview.subtitle",
-              "Welcome back. Access database registries and active outpatient schedules.",
-            )}
+            {t("overview.subtitle")}
           </p>
 
           {/* أزرار التنقل السريع باستخدام الدالة الممررة onNavigate */}
@@ -68,7 +125,7 @@ const { t, i18n } = useTranslation();
               className="bg-white text-primary px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer shadow-md shadow-black/10 flex items-center gap-1.5"
             >
               <span>
-                {t("overview.buttons.viewPatients", "Patient Registry")}
+                {t("overview.buttons.viewPatients")}
               </span>
               <ArrowRight
                 className={`w-4 h-4 text-primary ${isRtl ? "rotate-180" : ""}`}
@@ -79,7 +136,7 @@ const { t, i18n } = useTranslation();
               className="bg-white/10 border border-white/20 text-white px-5 py-2.5 rounded-lg text-xs font-bold hover:bg-white/20 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span>
-                {t("overview.buttons.manageApts", "Appointments Schedule")}
+                {t("overview.buttons.manageApts")}
               </span>
               <ChevronRight
                 className={`w-4 h-4 ${isRtl ? "rotate-180" : ""}`}
@@ -104,16 +161,13 @@ const { t, i18n } = useTranslation();
           </div>
           <div>
             <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.patientsTitle", "Total Patients")}
+              {t("overview.stats.patientsTitle")}
             </p>
             <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
-              250
+              {renderStatCount(stats.totalPatients)}
             </h4>
             <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t(
-                "overview.stats.patientsSubtitle",
-                "Total registered patients in the hospital",
-              )}
+              {t("overview.stats.patientsSubtitle")}
             </p>
           </div>
         </div>
@@ -124,14 +178,13 @@ const { t, i18n } = useTranslation();
           </div>
           <div>
             <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.nursesTitle", "Total Nurses")}
+              {t("overview.stats.employeesTitle")}
             </p>
-            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">45</h4>
+            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
+              {renderStatCount(stats.totalEmployees)}
+            </h4>
             <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t(
-                "overview.stats.nursesSubtitle",
-                "Nursing staff available for duty",
-              )}
+              {t("overview.stats.employeesSubtitle")}
             </p>
           </div>
         </div>
@@ -142,14 +195,13 @@ const { t, i18n } = useTranslation();
           </div>
           <div>
             <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.doctorsTitle", "Total Doctors")}
+              {t("overview.stats.doctorsTitle")}
             </p>
-            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">30</h4>
+            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
+              {renderStatCount(stats.totalDoctors)}
+            </h4>
             <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t(
-                "overview.stats.doctorsSubtitle",
-                "Active medical doctors on staff",
-              )}
+              {t("overview.stats.doctorsSubtitle")}
             </p>
           </div>
         </div>

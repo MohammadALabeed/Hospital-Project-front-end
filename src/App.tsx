@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import Login from "./components/Login";
 import Layout from "./components/Layout";
@@ -11,6 +10,12 @@ import { UserSession } from "./types.js";
 import { apiClient } from "./api.js";
 
 const SESSION_STORAGE_KEY = "app_user_session";
+
+const hasErrorResponse = (error: unknown) =>
+  typeof error === "object" &&
+  error !== null &&
+  "response" in error &&
+  Boolean(error.response);
 
 const isUserSession = (value: unknown): value is UserSession => {
   if (!value || typeof value !== "object") return false;
@@ -51,37 +56,6 @@ const clearStoredSession = () => {
   }
 };
 
-const normalizeSession = (value: unknown): UserSession | null => {
-  if (!value || typeof value !== "object") return null;
-  const user = value as Record<string, unknown>;
-  if (isUserSession(user)) return user;
-
-  const username = user.Username ?? user.username;
-  const roleId = user.RoleID ?? user.roleId;
-  if (typeof username !== "string" || typeof roleId !== "number") return null;
-
-  const roleNames: Record<number, UserSession["roleName"]> = {
-    1: "Admin",
-    2: "Doctor",
-    3: "Employee",
-    4: "Patient",
-  };
-  const roleName = roleNames[roleId];
-  if (!roleName) return null;
-
-  return {
-    username,
-    fullName:
-      typeof user.fullName === "string"
-        ? user.fullName
-        : typeof user.FullName === "string"
-          ? user.FullName
-          : username,
-    roleId: roleId as UserSession["roleId"],
-    roleName,
-  };
-};
-
 export default function App() {
   const { t, i18n } = useTranslation();
 
@@ -100,22 +74,21 @@ export default function App() {
     setCheckingAuth(true);
     setAuthCheckError(null);
     try {
-      const response = await apiClient.get("/auth/me");
-      const userSession = normalizeSession(response.data?.user ?? response.data?.data?.user);
-      const activeSession = userSession ?? readStoredSession();
-      if (response.status === 200 && response.data?.authenticated !== false && activeSession) {
-        setSession(activeSession);
-        persistSession(activeSession);
+      await apiClient.get("/patients");
+      const storedSession = readStoredSession();
+      if (storedSession) {
+        setSession(storedSession);
       } else {
-        setAuthCheckError(t("app.session.verificationFailed"));
+        setSession(null);
+        clearStoredSession();
       }
     } catch (error) {
-      if (isAxiosError(error) && error.response?.status === 401) {
+      console.error("Auth check failed:", error);
+      if (hasErrorResponse(error)) {
         setSession(null);
         clearStoredSession();
       } else {
-        console.error("Failed to verify the active session:", error);
-        if (!readStoredSession()) {
+        if (!session) {
           setAuthCheckError(t("app.session.connectionFailed"));
         }
       }
@@ -225,9 +198,11 @@ export default function App() {
         <Overview user={session} onNavigate={setCurrentTab} />
       )}
 
-      {currentTab === "patients" && <Patients searchTerm={searchTerm} />}
-      {currentTab === "appointments" && <Appointments />}
-      {currentTab === "medical-records" && <MedicalRecords />}
+      {currentTab === "patients" && (
+        <Patients user={session} searchTerm={searchTerm} />
+      )}
+      {currentTab === "appointments" && <Appointments user={session} />}
+      {currentTab === "medical-records" && <MedicalRecords user={session} />}
     </Layout>
   );
 }

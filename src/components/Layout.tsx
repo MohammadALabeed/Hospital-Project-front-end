@@ -54,22 +54,22 @@ export default function Layout({
   const navItems = [
     {
       id: "dashboard",
-      label: t("layout.sidebar.dashboard", "Dashboard"),
+      label: t("layout.sidebar.dashboard"),
       icon: LayoutDashboard,
     },
     {
       id: "patients",
-      label: t("layout.sidebar.patients", "Patients Registry"),
+      label: t("layout.sidebar.patients"),
       icon: Users,
     },
     {
       id: "appointments",
-      label: t("layout.sidebar.appointments", "Appointments"),
+      label: t("layout.sidebar.appointments"),
       icon: Calendar,
     },
     {
       id: "medical-records",
-      label: t("layout.sidebar.medicalRecords", "Medical Records"),
+      label: t("layout.sidebar.medicalRecords"),
       icon: ClipboardList,
     },
   ];
@@ -79,24 +79,34 @@ export default function Layout({
     switch (id) {
       case RoleID.Admin:
         return {
-          text: t("layout.roles.admin", "Admin"),
+          text: t("layout.roles.admin"),
           style: "bg-red-500/10 border-red-500/20 text-red-600",
         };
       case RoleID.Doctor:
         return {
-          text: t("layout.roles.doctor", "Doctor"),
+          text: t("layout.roles.doctor"),
           style: "bg-indigo-500/10 border-indigo-500/20 text-indigo-600",
+        };
+      case RoleID.Employee:
+        return {
+          text: t("layout.roles.employee"),
+          style: "bg-zinc-500/10 border-zinc-500/20 text-zinc-600",
+        };
+      case RoleID.Patient:
+        return {
+          text: t("layout.roles.patient"),
+          style: "bg-teal-500/10 border-teal-500/20 text-teal-600",
         };
       default:
         return {
-          text: t("layout.roles.staff", "Staff"),
+          text: t("layout.roles.staff"),
           style: "bg-zinc-500/10 border-zinc-500/20 text-zinc-600",
         };
     }
   };
 
   const badgeProps = getRoleColorAndLabel(user.roleId);
-  const isRtl = i18n.language === "ar";
+  const isRtl = i18n.language.startsWith("ar");
 
   // دالة التبديل السريع بين اللغتين العربية والإنجليزية
   const toggleLanguage = () => {
@@ -123,10 +133,10 @@ export default function Layout({
             </span>
             <div>
               <h1 className="font-bold text-lg text-primary tracking-tight">
-                MedCenter Pro
+                {t("common.brandName")}
               </h1>
               <p className="text-[10px] text-secondary tracking-widest uppercase font-semibold leading-none mt-1">
-                {t("layout.sidebar.systemBrand", "Hospital System")}
+                {t("layout.sidebar.systemBrand")}
               </p>
             </div>
           </div>
@@ -172,7 +182,7 @@ export default function Layout({
             />
 
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-on-surface truncate">
+              <p dir="auto" className="text-xs font-bold text-on-surface truncate">
                 {user.fullName}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5 justify-start">
@@ -192,7 +202,7 @@ export default function Layout({
             }`}
           >
             <LogOut className="w-5 h-5" />
-            <span>{t("layout.sidebar.logout", "Sign Out")}</span>
+            <span>{t("layout.sidebar.logout")}</span>
           </button>
         </div>
       </aside>
@@ -210,9 +220,9 @@ export default function Layout({
               type="text"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
+              dir="auto"
               placeholder={t(
                 "layout.navbar.searchPlaceholder",
-                "Search patient charts...",
               )}
               className={`w-full bg-slate-50 border border-outline-variant rounded-lg py-2.5 ${
                 isRtl ? "pr-10 pl-4 text-right" : "pl-10 pr-4 text-left"
@@ -229,8 +239,8 @@ export default function Layout({
               {/* النص هنا يعكس دائماً اسم اللغة الأخرى للتحويل إليها بشكل منطقي */}
               <span>
                 {isRtl
-                  ? t("common.language.english", "English")
-                  : t("common.language.arabic", "العربية")}
+                  ? t("common.languageEnglish")
+                  : t("common.languageArabic")}
               </span>
             </button>
 
@@ -247,18 +257,15 @@ export default function Layout({
               />
               <span>
                 {serverOnline
-                  ? t("layout.navbar.statusOnline", "System: Online")
-                  : t("layout.navbar.statusOffline", "System: Offline")}
+                  ? t("layout.navbar.statusOnline")
+                  : t("layout.navbar.statusOffline")}
               </span>
             </button>
 
             <button
               onClick={() =>
                 alert(
-                  t(
-                    "layout.navbar.noNotifications",
-                    "No new system notifications.",
-                  ),
+                  t("layout.navbar.noNotifications"),
                 )
               }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none relative"
@@ -272,10 +279,7 @@ export default function Layout({
             <button
               onClick={() =>
                 alert(
-                  t(
-                    "layout.navbar.settingsMaintenance",
-                    "Settings panel is under maintenance.",
-                  ),
+                  t("layout.navbar.settingsMaintenance"),
                 )
               }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none"
@@ -286,10 +290,7 @@ export default function Layout({
             <button
               onClick={() =>
                 alert(
-                  t(
-                    "layout.navbar.documentationSupport",
-                    "Documentation and support gateway.",
-                  ),
+                  t("layout.navbar.documentationSupport"),
                 )
               }
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none"

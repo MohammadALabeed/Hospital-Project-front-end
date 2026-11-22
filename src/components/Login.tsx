@@ -11,12 +11,65 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
-import { UserSession } from "../types.js";
+import { RoleID, type RoleName, type UserSession } from "../types.js";
 
 //تحديد نوع البيانات المستقبلة
 interface LoginProps {
   onLoginSuccess: (session: UserSession) => void;
 }
+
+const roleNameById: Record<RoleID, RoleName> = {
+  [RoleID.Admin]: "Admin",
+  [RoleID.Doctor]: "Doctor",
+  [RoleID.Employee]: "Employee",
+  [RoleID.Patient]: "Patient",
+};
+
+const roleIdByName: Record<string, RoleID> = {
+  admin: RoleID.Admin,
+  administrator: RoleID.Admin,
+  "system admin": RoleID.Admin,
+  doctor: RoleID.Doctor,
+  employee: RoleID.Employee,
+  patient: RoleID.Patient,
+};
+
+const parseRoleId = (value: unknown): RoleID | null => {
+  if (typeof value === "number" && value in roleNameById) {
+    return value as RoleID;
+  }
+  if (typeof value !== "string") return null;
+
+  const normalizedValue = value.trim().toLowerCase().replace(/\s+/g, " ");
+  if (normalizedValue in roleIdByName) return roleIdByName[normalizedValue];
+  const numericValue = Number(normalizedValue);
+  return Number.isInteger(numericValue) && numericValue in roleNameById
+    ? (numericValue as RoleID)
+    : null;
+};
+
+const parseUserSession = (value: unknown): UserSession | null => {
+  if (!value || typeof value !== "object") return null;
+  const user = value as Record<string, unknown>;
+  const usernameValue = user.Username ?? user.username;
+  if (typeof usernameValue !== "string" || !usernameValue.trim()) return null;
+
+  const roleId =
+    parseRoleId(user.RoleID ?? user.RoleId ?? user.roleId) ??
+    parseRoleId(user.RoleName ?? user.roleName ?? user.Role ?? user.role);
+  if (roleId === null) return null;
+
+  const fullNameValue = user.FullName ?? user.fullName;
+  return {
+    username: usernameValue,
+    fullName:
+      typeof fullNameValue === "string" && fullNameValue.trim()
+        ? fullNameValue
+        : usernameValue,
+    roleId,
+    roleName: roleNameById[roleId],
+  };
+};
 
 //بيانات الحقول
 export default function Login({ onLoginSuccess }: LoginProps) {
@@ -34,7 +87,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); //منع إعادة تحميل الصفحة
     if (!username || !password) {
-      setErrorMsg(t("login.error", "Invalid username or password."));
+      setErrorMsg("login.error");
       return;
     }
 
@@ -49,52 +102,30 @@ export default function Login({ onLoginSuccess }: LoginProps) {
       });
 
       // التحقق من استلام بيانات المستخدم من السيرفر
-      if (response.data && response.data.user) {
-        const backendUser = response.data.user;
-
-        const roleNames: Record<number, "Admin" | "Doctor" | "Employee" | "Patient"> = {
-          1: "Admin",
-          2: "Doctor",
-          3: "Employee",
-          4: "Patient",
-        };
-
-        const sessionData: UserSession = {
-          username: backendUser.Username,
-          fullName: backendUser.Username,
-          roleId: backendUser.RoleID,
-          roleName: roleNames[backendUser.RoleID] || "Admin",
-        };
-
+      const sessionData = parseUserSession(response.data?.user);
+      if (sessionData) {
         onLoginSuccess(sessionData);
       } else {
-        setErrorMsg(t("login.error", "Invalid username or password."));
+        console.error("Login response did not contain a valid user session.");
+        setErrorMsg("login.error");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Login request failed:", error);
-      if (error.response && error.response.data && error.response.data.message) {
-        setErrorMsg(error.response.data.message);
-      } else if (error.response && error.response.data && error.response.data.error) {
-        setErrorMsg(error.response.data.error);
-      } else {
-        setErrorMsg(
-          t("login.error", "Authentication failed. Please try again."),
-        );
-      }
+      setErrorMsg("login.error");
     } finally {
       setLoading(false);
     }
   };
 
   //تبديل اللغة بين العربية والإنجليزية
+  const isRtl = i18n.language.startsWith("ar");
   const toggleLanguage = () => {
-    const nextLang = i18n.language === "ar" ? "en" : "ar";
-    i18n.changeLanguage(nextLang);
+    i18n.changeLanguage(isRtl ? "en" : "ar");
   };
-  const isRtl = i18n.language === "ar";
 
   return (
     <div
+      dir={isRtl ? "rtl" : "ltr"}
       className={`relative min-h-screen w-full bg-surface text-on-surface select-none flex flex-col items-center justify-center p-4 ${isRtl ? "text-right" : "text-left"}`}
     >
       <div className={`absolute top-6 ${isRtl ? "left-6" : "right-6"} z-50`}>
@@ -106,8 +137,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <Globe className="w-3.5 h-3.5" />
           <span>
             {isRtl
-              ? t("common.language.english", "English")
-              : t("common.language.arabic", "العربية")}
+              ? t("common.languageEnglish")
+              : t("common.languageArabic")}
           </span>
         </button>
         <div className="absolute bottom-[10%] right-[10%] w-[35%] h-[35%] rounded-full bg-primary-container/10 blur-[130px]" />
@@ -120,7 +151,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             <BriefcaseMedical className="w-8 h-8" />
           </div>
           <h1 className="text-3xl font-bold text-primary tracking-tight font-sans">
-            MedCenter Pro
+            {t("common.brandName")}
           </h1>
         </div>
 
@@ -135,7 +166,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             >
               <Lock className="text-primary w-4 h-4" />
               <span className="text-xs font-semibold text-primary uppercase tracking-wider font-sans">
-                {t("login.title", "Unified Medical Portal")}
+                {t("login.title")}
               </span>
             </div>
 
@@ -145,7 +176,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
             >
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[11px] font-bold text-secondary uppercase tracking-widest">
-                {t("patients.status.stable", "Stable")}
+                {t("patients.status.stable")}
               </span>
             </div>
           </div>
@@ -154,7 +185,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
           <div className="p-8 md:p-10">
             <header className="mb-6">
               <h2 className="text-2xl font-bold text-on-surface tracking-tight">
-                {t("login.title", "Unified Medical Portal")}
+                {t("login.title")}
               </h2>
             </header>
 
@@ -164,7 +195,9 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                 className={`mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex gap-3 text-sm text-red-600 select-text ${isRtl ? "flex-row-reverse" : ""}`}
               >
                 <ShieldCheck className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                <span className="font-semibold leading-snug">{errorMsg}</span>
+                <span dir="auto" className="font-semibold leading-snug">
+                  {t(errorMsg)}
+                </span>
               </div>
             )}
 
@@ -176,7 +209,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant block"
                   htmlFor="username"
                 >
-                  {t("login.usernameLabel", "Username")}
+                  {t("login.usernameLabel")}
                 </label>
                 <div className="relative group">
                   <div
@@ -189,11 +222,11 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     id="username"
                     name="username"
                     type="text"
-                    dir={isRtl ? "rtl" : "ltr"}
+                    dir="auto"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={t("login.usernameLabel", "Username")}
+                    placeholder={t("login.usernameLabel")}
                     className={`block w-full ${isRtl ? "pr-10 pl-10 text-right" : "pl-10 pr-10 text-left"} py-3 bg-white border border-outline-variant rounded-lg font-sans text-sm text-on-surface placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary transition-all shadow-inner`}
                   />
                 </div>
@@ -206,7 +239,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     className={`text-xs font-semibold uppercase tracking-wider text-on-surface-variant block ${isRtl ? "text-right" : "text-left"}`}
                     htmlFor="password"
                   >
-                    {t("login.passwordLabel", "Password")}
+                    {t("login.passwordLabel")}
                   </label>
                 </div>
                 <div className="relative group">
@@ -257,10 +290,7 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                     htmlFor="remember_me"
                     className={`${isRtl ? "mr-2.5 ml-0" : "ml-2.5 mr-0"} text-xs text-secondary cursor-pointer font-semibold leading-none`}
                   >
-                    {t(
-                      "login.rememberWorkstation",
-                      "Remember this workstation",
-                    )}
+                    {t("login.rememberWorkstation")}
                   </label>
                 </div>
 
@@ -268,15 +298,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   type="button"
                   onClick={() =>
                     alert(
-                      t(
-                        "login.alerts.passwordReset",
-                        "Please contact IT support to reset your password.",
-                      ),
+                      t("login.alerts.passwordReset"),
                     )
                   }
                   className="text-xs font-semibold text-primary hover:underline transition-all"
                 >
-                  {t("login.forgotPassword", "Forgot Password?")}
+                  {t("login.forgotPassword")}
                 </button>
               </div>
 
@@ -309,12 +336,12 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                       ></path>
                     </svg>
                     <span>
-                      {t("login.status.authenticating", "Authenticating...")}
+                      {t("login.status.authenticating")}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span>{t("login.button", "Secure Sign In")}</span>
+                    <span>{t("login.button")}</span>
                     <ArrowRight
                       className={`w-4 h-4 group-hover:translate-x-1 transition-transform ${isRtl ? "rotate-180 group-hover:-translate-x-1" : ""}`}
                     />
@@ -328,21 +355,18 @@ export default function Login({ onLoginSuccess }: LoginProps) {
               className={`mt-8 pt-5 border-t border-outline-variant flex items-center justify-between gap-4 text-xs ${isRtl ? "flex-row-reverse" : ""}`}
             >
               <span className="text-secondary font-semibold font-sans">
-                {t("login.help.needAssistance", "Need assistance?")}
+                {t("login.help.needAssistance")}
               </span>
               <button
                 type="button"
                 onClick={() =>
                   alert(
-                    t(
-                      "login.alerts.supportOffline",
-                      "Support ticket gateway is currently offline.",
-                    ),
+                    t("login.alerts.supportOffline"),
                   )
                 }
                 className="px-3 py-1.5 border border-outline-variant text-secondary font-bold rounded-lg hover:border-primary hover:text-primary transition-all cursor-pointer"
               >
-                {t("login.help.contactSupport", "Contact IT Support")}
+                {t("login.help.contactSupport")}
               </button>
             </div>
           </div>

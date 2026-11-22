@@ -2,11 +2,23 @@ import React, { useEffect, useState } from "react";
 import { Calendar, CheckCircle2, Clock, Loader2, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
+import {
+  getPersonLabel,
+  parseDirectoryPeople,
+  type DirectoryPerson,
+} from "../personDirectory.js";
+import { RoleID, type UserSession } from "../types.js";
+
+interface AppointmentsProps {
+  user: UserSession;
+}
 
 interface AppointmentRecord {
   AppointmentID: number | string;
   PatientID: number | string;
   DoctorID: number | string;
+  PatientName?: string | null;
+  DoctorName?: string | null;
   AppointmentDate: string;
   Status: string;
 }
@@ -26,6 +38,12 @@ const isAppointmentRecord = (value: unknown): value is AppointmentRecord => {
       typeof appointment.AppointmentID === "string") &&
     (typeof appointment.PatientID === "number" || typeof appointment.PatientID === "string") &&
     (typeof appointment.DoctorID === "number" || typeof appointment.DoctorID === "string") &&
+    (appointment.PatientName === undefined ||
+      typeof appointment.PatientName === "string" ||
+      appointment.PatientName === null) &&
+    (appointment.DoctorName === undefined ||
+      typeof appointment.DoctorName === "string" ||
+      appointment.DoctorName === null) &&
     typeof appointment.AppointmentDate === "string" &&
     typeof appointment.Status === "string"
   );
@@ -40,11 +58,16 @@ const appointmentStatuses = [
   "Confirmed",
   "Completed",
   "Cancelled",
+  "In Progress",
 ];
 
-export default function Appointments() {
+export default function Appointments({ user }: AppointmentsProps) {
   const { t, i18n } = useTranslation();
+  const isAdmin = user.roleId === RoleID.Admin;
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
+  const [patientOptions, setPatientOptions] = useState<DirectoryPerson[]>([]);
+  const [doctorOptions, setDoctorOptions] = useState<DirectoryPerson[]>([]);
+  const [directoryLoading, setDirectoryLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -61,24 +84,55 @@ export default function Appointments() {
     try {
       const response = await apiClient.get("/appointments");
       if (!Array.isArray(response.data) || !response.data.every(isAppointmentRecord)) {
-        setErrorMsg(t("appointments.errors.schemaError"));
+        setErrorMsg("appointments.errors.schemaError");
         return;
       }
       setAppointments(response.data);
     } catch (error) {
       console.error("Failed to retrieve appointments:", error);
-      setErrorMsg(t("appointments.errors.fetchFailed"));
+      setErrorMsg("appointments.errors.fetchFailed");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchDirectoryOptions = async () => {
+    setDirectoryLoading(true);
+    try {
+      const [patientsResponse, doctorsResponse] = await Promise.all([
+        apiClient.get("/patients"),
+        apiClient.get("/doctors"),
+      ]);
+      const patients = parseDirectoryPeople(
+        patientsResponse.data,
+        "PatientID",
+        "PatientName",
+      );
+      const doctors = parseDirectoryPeople(
+        doctorsResponse.data,
+        "DoctorID",
+        "DoctorName",
+      );
+      if (!patients || !doctors) {
+        throw new Error("The server returned an unexpected directory format.");
+      }
+      setPatientOptions(patients);
+      setDoctorOptions(doctors);
+    } catch (error) {
+      console.error("Failed to retrieve patient and doctor directories:", error);
+      setActionError("appointments.errors.directoryFetchFailed");
+    } finally {
+      setDirectoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     void fetchAppointments();
+    void fetchDirectoryOptions();
   }, []);
 
-  const showNotification = (message: string) => {
-    setNotification(message);
+  const showNotification = (messageKey: string) => {
+    setNotification(messageKey);
     window.setTimeout(() => setNotification(null), 4000);
   };
 
@@ -93,7 +147,7 @@ export default function Appointments() {
       parsedDoctorId <= 0 ||
       !appointmentDate
     ) {
-      setActionError(t("appointments.errors.requiredFields"));
+      setActionError("appointments.errors.requiredFields");
       return;
     }
 
@@ -120,10 +174,10 @@ export default function Appointments() {
       setDoctorId("");
       setAppointmentDate("");
       setStatus("Pending");
-      showNotification(t("appointments.notifications.saved"));
+      showNotification("appointments.notifications.saved");
     } catch (error) {
       console.error("Failed to create appointment:", error);
-      setActionError(t("appointments.errors.saveFailed"));
+      setActionError("appointments.errors.saveFailed");
     }
   };
 
@@ -156,16 +210,17 @@ export default function Appointments() {
             : currentAppointment,
         ),
       );
-      showNotification(t("appointments.notifications.updated"));
+      showNotification("appointments.notifications.updated");
     } catch (error) {
       console.error("Failed to update appointment status:", error);
-      setActionError(t("appointments.errors.updateFailed"));
+      setActionError("appointments.errors.updateFailed");
     } finally {
       setWorkingAppointmentId(null);
     }
   };
 
   const handleDeleteAppointment = async (appointment: AppointmentRecord) => {
+    if (!isAdmin) return;
     const appointmentKey = getAppointmentKey(appointment.AppointmentID);
     setWorkingAppointmentId(appointmentKey);
     setActionError(null);
@@ -177,10 +232,10 @@ export default function Appointments() {
             getAppointmentKey(currentAppointment.AppointmentID) !== appointmentKey,
         ),
       );
-      showNotification(t("appointments.notifications.deleted"));
+      showNotification("appointments.notifications.deleted");
     } catch (error) {
       console.error("Failed to delete appointment:", error);
-      setActionError(t("appointments.errors.deleteFailed"));
+      setActionError("appointments.errors.deleteFailed");
     } finally {
       setWorkingAppointmentId(null);
     }
@@ -216,13 +271,13 @@ export default function Appointments() {
       (knownStatus) => knownStatus.toLowerCase() === appointmentStatus.trim().toLowerCase(),
     );
     return statusKey
-      ? t(`appointments.status.${statusKey.toLowerCase()}`)
+      ? t(`appointments.status.${statusKey.toLowerCase().replace(/\s+/g, "")}`)
       : appointmentStatus;
   };
 
   return (
     <div
-      dir={i18n.language === "ar" ? "rtl" : "ltr"}
+      dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
       className="space-y-8 animate-in fade-in duration-300"
     >
       <header>
@@ -235,13 +290,13 @@ export default function Appointments() {
       {notification && (
         <div role="status" className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-          <span>{notification}</span>
+          <span>{t(notification)}</span>
         </div>
       )}
       {(errorMsg || actionError) && (
         <div role="alert" className="flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-50 p-4 text-sm font-semibold text-rose-800">
           <ShieldAlert className="h-5 w-5 shrink-0 text-rose-600" />
-          <span>{actionError ?? errorMsg}</span>
+          <span>{t(actionError ?? errorMsg ?? "appointments.errors.fetchFailed")}</span>
         </div>
       )}
 
@@ -256,33 +311,53 @@ export default function Appointments() {
               <label htmlFor="appointment-patient-id" className="block text-xs font-semibold text-on-surface-variant">
                 {t("appointments.form.patientIdLabel")}
               </label>
-              <input
+              <select
                 id="appointment-patient-id"
-                type="number"
-                min="1"
-                step="1"
                 required
+                disabled={directoryLoading || patientOptions.length === 0}
                 value={patientId}
                 onChange={(event) => setPatientId(event.target.value)}
-                placeholder={t("appointments.form.patientIdPlaceholder")}
                 className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-              />
+              >
+                <option value="">
+                  {directoryLoading
+                    ? t("appointments.form.loadingPatients")
+                    : patientOptions.length
+                      ? t("appointments.form.selectPatientPlaceholder")
+                      : t("appointments.form.noPatientsAvailable")}
+                </option>
+                {patientOptions.map((person) => (
+                  <option key={person.id} value={person.id} dir="auto">
+                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1">
               <label htmlFor="appointment-doctor-id" className="block text-xs font-semibold text-on-surface-variant">
                 {t("appointments.form.doctorIdLabel")}
               </label>
-              <input
+              <select
                 id="appointment-doctor-id"
-                type="number"
-                min="1"
-                step="1"
                 required
+                disabled={directoryLoading || doctorOptions.length === 0}
                 value={doctorId}
                 onChange={(event) => setDoctorId(event.target.value)}
-                placeholder={t("appointments.form.doctorIdPlaceholder")}
                 className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-              />
+              >
+                <option value="">
+                  {directoryLoading
+                    ? t("appointments.form.loadingDoctors")
+                    : doctorOptions.length
+                      ? t("appointments.form.selectDoctorPlaceholder")
+                      : t("appointments.form.noDoctorsAvailable")}
+                </option>
+                {doctorOptions.map((person) => (
+                  <option key={person.id} value={person.id} dir="auto">
+                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1">
               <label htmlFor="appointment-date" className="block text-xs font-semibold text-on-surface-variant">
@@ -362,10 +437,10 @@ export default function Appointments() {
                       {t("appointments.table.appointmentId")}
                     </th>
                     <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
-                      {t("appointments.table.patientId")}
+                      {t("appointments.table.patientName")}
                     </th>
                     <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
-                      {t("appointments.table.doctorId")}
+                      {t("appointments.table.doctor")}
                     </th>
                     <th className="px-5 py-3 text-start text-xs font-bold uppercase tracking-wider text-secondary">
                       {t("appointments.table.date")}
@@ -388,10 +463,22 @@ export default function Appointments() {
                           #{appointment.AppointmentID}
                         </td>
                         <td className="px-5 py-4 text-start font-semibold text-on-surface">
-                          {appointment.PatientID}
+                          <span dir="auto">
+                            {getPersonLabel(
+                              appointment.PatientName,
+                              appointment.PatientID,
+                              patientOptions,
+                            )}
+                          </span>
                         </td>
                         <td className="px-5 py-4 text-start font-semibold text-on-surface">
-                          {appointment.DoctorID}
+                          <span dir="auto">
+                            {getPersonLabel(
+                              appointment.DoctorName,
+                              appointment.DoctorID,
+                              doctorOptions,
+                            )}
+                          </span>
                         </td>
                         <td className="whitespace-nowrap px-5 py-4 text-start font-semibold text-on-surface">
                           <span className="inline-flex items-center gap-1.5">
@@ -423,21 +510,23 @@ export default function Appointments() {
                           </select>
                         </td>
                         <td className="px-5 py-4 text-start">
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteAppointment(appointment)}
-                            disabled={isWorking || Boolean(workingAppointmentId)}
-                            aria-label={t("appointments.table.deleteAppointment", {
-                              id: appointment.AppointmentID,
-                            })}
-                            className="rounded-lg p-2 text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
-                          >
-                            {isWorking ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteAppointment(appointment)}
+                              disabled={isWorking || Boolean(workingAppointmentId)}
+                              aria-label={t("appointments.table.deleteAppointment", {
+                                id: appointment.AppointmentID,
+                              })}
+                              className="rounded-lg p-2 text-rose-700 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                            >
+                              {isWorking ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
