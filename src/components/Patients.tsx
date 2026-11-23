@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Pencil, Plus, ShieldAlert, Trash2, Users, X } from "lucide-react";
+import { CheckCircle2, Pencil, Plus, ShieldAlert, Trash2, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
 import { RoleID, type PatientRecord, type UserSession } from "../types.js";
@@ -25,6 +25,39 @@ const isPatientRecord = (value: unknown): value is PatientRecord => {
 
 const getPatientKey = (patientId: PatientRecord["PatientID"]) => String(patientId);
 
+interface PersonalInfoRecord {
+  PersonalInfoID: number | string;
+  UserID: number | string;
+  FullName?: string | null;
+  Email?: string | null;
+  Address?: string | null;
+  DateOfBirth?: string | null;
+  Gender?: string | null;
+}
+
+const isPersonalInfoRecord = (value: unknown): value is PersonalInfoRecord => {
+  if (!value || typeof value !== "object") return false;
+  const personalInfo = value as Record<string, unknown>;
+  const optionalStringFields = [
+    "FullName",
+    "Email",
+    "Address",
+    "DateOfBirth",
+    "Gender",
+  ];
+  return (
+    (typeof personalInfo.PersonalInfoID === "number" ||
+      typeof personalInfo.PersonalInfoID === "string") &&
+    (typeof personalInfo.UserID === "number" || typeof personalInfo.UserID === "string") &&
+    optionalStringFields.every(
+      (field) =>
+        personalInfo[field] === undefined ||
+        personalInfo[field] === null ||
+        typeof personalInfo[field] === "string",
+    )
+  );
+};
+
 export default function Patients({ user, searchTerm }: PatientsProps) {
   const { t, i18n } = useTranslation();
   const isAdmin = user.roleId === RoleID.Admin;
@@ -34,8 +67,8 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
-  const [editingBloodType, setEditingBloodType] = useState("");
+  const [editingPatient, setEditingPatient] = useState<PatientRecord | null>(null);
+  const [editingPersonalInfoId, setEditingPersonalInfoId] = useState<string | null>(null);
   const [workingPatientId, setWorkingPatientId] = useState<string | null>(null);
 
   const fetchPatients = async () => {
@@ -61,9 +94,13 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
   }, []);
 
   const filteredPatients = useMemo(() => {
+    const sortedPatients = [...patients].sort(
+      (firstPatient, secondPatient) =>
+        Number(firstPatient.PatientID) - Number(secondPatient.PatientID),
+    );
     const query = typeof searchTerm === "string" ? searchTerm.trim().toLocaleLowerCase() : "";
-    if (!query) return patients;
-    return patients.filter((patient) =>
+    if (!query) return sortedPatients;
+    return sortedPatients.filter((patient) =>
       [patient.PatientID, patient.UserID, patient.BloodType, ...Object.values(patient)]
         .some((value) => String(value ?? "").toLocaleLowerCase().includes(query)),
     );
@@ -81,57 +118,67 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
     window.setTimeout(() => setNotification(null), 4000);
   };
 
-  const handlePatientCreated = (patient: PatientRecord | null) => {
+  const handlePatientSaved = (patient: PatientRecord | null) => {
     if (patient) {
-      setPatients((previousPatients) => [
-        patient,
-        ...previousPatients.filter(
+      setPatients((previousPatients) => {
+        const patientExists = previousPatients.some(
           (existingPatient) =>
-            getPatientKey(existingPatient.PatientID) !== getPatientKey(patient.PatientID),
-        ),
-      ]);
+            getPatientKey(existingPatient.PatientID) === getPatientKey(patient.PatientID),
+        );
+        return patientExists
+          ? previousPatients.map((existingPatient) =>
+              getPatientKey(existingPatient.PatientID) === getPatientKey(patient.PatientID)
+                ? patient
+                : existingPatient,
+            )
+          : [patient, ...previousPatients];
+      });
     } else {
       void fetchPatients();
     }
     setShowModal(false);
-    showNotification("patients.notifications.created");
+    setEditingPatient(null);
+    setEditingPersonalInfoId(null);
+    showNotification(editingPatient ? "patients.notifications.updated" : "patients.notifications.created");
   };
 
-  const beginEditing = (patient: PatientRecord) => {
-    setEditingPatientId(getPatientKey(patient.PatientID));
-    setEditingBloodType(patient.BloodType ?? "");
-    setActionError(null);
-  };
-
-  const handleUpdateBloodType = async (patient: PatientRecord) => {
+  const beginEditing = async (patient: PatientRecord) => {
     const patientKey = getPatientKey(patient.PatientID);
-    const bloodType = editingBloodType.trim();
-    if (!bloodType) {
-      setActionError("patients.errors.bloodTypeRequired");
-      return;
-    }
-
     setWorkingPatientId(patientKey);
     setActionError(null);
     try {
-      const response = await apiClient.put(`/patients/${patient.PatientID}`, {
-        BloodType: bloodType,
-      });
-      const updatedPatient: unknown = response.data?.data;
-      setPatients((previousPatients) =>
-        previousPatients.map((currentPatient) =>
-          getPatientKey(currentPatient.PatientID) === patientKey
-            ? isPatientRecord(updatedPatient)
-              ? updatedPatient
-              : { ...currentPatient, BloodType: bloodType }
-            : currentPatient,
-        ),
+      const response = await apiClient.get("/personal-info");
+      const personalInfoRecords: unknown = response.data;
+      if (
+        !Array.isArray(personalInfoRecords) ||
+        !personalInfoRecords.every(isPersonalInfoRecord)
+      ) {
+        throw new Error("The server returned an unexpected personal information format.");
+      }
+
+      const personalInfo = personalInfoRecords.find(
+        (record) => String(record.UserID) === String(patient.UserID),
       );
-      setEditingPatientId(null);
-      showNotification("patients.notifications.updated");
+      if (!personalInfo) {
+        throw new Error("No personal information record exists for this patient.");
+      }
+
+      const fullName = personalInfo.FullName ?? patient.FullName ?? patient.PatientName ?? "";
+      setEditingPatient({
+        ...patient,
+        PersonalInfoID: personalInfo.PersonalInfoID,
+        FullName: fullName,
+        PatientName: fullName,
+        Email: personalInfo.Email ?? patient.Email ?? "",
+        Address: personalInfo.Address ?? patient.Address ?? "",
+        DateOfBirth: personalInfo.DateOfBirth ?? patient.DateOfBirth ?? "",
+        Gender: personalInfo.Gender ?? patient.Gender ?? "",
+      });
+      setEditingPersonalInfoId(String(personalInfo.PersonalInfoID));
+      setShowModal(true);
     } catch (error) {
-      console.error("Failed to update patient blood type:", error);
-      setActionError("patients.errors.updateFailed");
+      console.error("Failed to retrieve patient personal information:", error);
+      setActionError("patients.errors.personalInfoLookupFailed");
     } finally {
       setWorkingPatientId(null);
     }
@@ -149,7 +196,11 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
           (currentPatient) => getPatientKey(currentPatient.PatientID) !== patientKey,
         ),
       );
-      if (editingPatientId === patientKey) setEditingPatientId(null);
+      if (editingPatient && getPatientKey(editingPatient.PatientID) === patientKey) {
+        setEditingPatient(null);
+        setEditingPersonalInfoId(null);
+        setShowModal(false);
+      }
       showNotification("patients.notifications.deleted");
     } catch (error) {
       console.error("Failed to delete patient:", error);
@@ -158,17 +209,6 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
       setWorkingPatientId(null);
     }
   };
-
-  const bloodTypes = [
-    "A+",
-    "A-",
-    "B+",
-    "B-",
-    "O+",
-    "O-",
-    "AB+",
-    "AB-",
-  ];
 
   return (
     <div
@@ -184,7 +224,11 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
         </div>
         <button
           type="button"
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setEditingPatient(null);
+            setEditingPersonalInfoId(null);
+            setShowModal(true);
+          }}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-xs font-bold text-white shadow-md transition-colors hover:bg-primary/90"
         >
           <Plus className="h-4 w-4" />
@@ -247,7 +291,7 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                     {t("patients.table.cols.email")}
                   </th>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
-                    {t("patients.table.cols.phone")}
+                    {t("patients.table.cols.address")}
                   </th>
                   <th className="px-6 py-4 text-start text-xs font-bold uppercase tracking-wider text-secondary">
                     {t("patients.table.cols.dateOfBirth")}
@@ -261,9 +305,8 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {filteredPatients.map((patient) => {
+                {filteredPatients.map((patient, index) => {
                   const patientKey = getPatientKey(patient.PatientID);
-                  const isEditing = editingPatientId === patientKey;
                   const isWorking = workingPatientId === patientKey;
                   return (
                     <tr key={patientKey} className="transition-colors hover:bg-primary/5">
@@ -273,76 +316,41 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
                             <span dir="auto" className="font-sans text-on-surface">
                               {getPatientName(patient)}
                             </span>
-                            <span>#{patient.PatientID}</span>
+                            <span>#{index + 1}</span>
                           </span>
                         ) : (
-                          `#${patient.PatientID}`
+                          `#${index + 1}`
                         )}
                       </td>
                       <td className="px-6 py-4 text-start font-semibold text-on-surface">
                         <span dir="auto">{patient.Email || t("patients.table.notProvided")}</span>
                       </td>
                       <td className="px-6 py-4 text-start font-semibold text-on-surface">
-                        <span dir="auto">{patient.Phone || t("patients.table.notProvided")}</span>
+                        <span dir="auto">
+                          {typeof patient.Address === "string" && patient.Address.trim()
+                            ? patient.Address
+                            : t("patients.table.notProvided")}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-start font-semibold text-on-surface">
                         {patient.DateOfBirth || t("patients.table.notProvided")}
                       </td>
                       <td className="px-6 py-4 text-start">
-                        {isEditing ? (
-                          <select
-                            aria-label={t("patients.actions.editBloodType")}
-                            value={editingBloodType}
-                            onChange={(event) => setEditingBloodType(event.target.value)}
-                            className="rounded-lg border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          >
-                            <option value="">{t("patientModal.form.bloodTypePlaceholder")}</option>
-                            {bloodTypes.map((bloodType) => (
-                              <option key={bloodType} value={bloodType}>
-                                {bloodType}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="inline-flex rounded-full border border-rose-500/15 bg-rose-50 px-3 py-1 text-sm font-bold text-rose-800">
-                            {patient.BloodType || t("patients.table.unknownBloodType")}
-                          </span>
-                        )}
+                        <span className="inline-flex rounded-full border border-rose-500/15 bg-rose-50 px-3 py-1 text-sm font-bold text-rose-800">
+                          {patient.BloodType || t("patients.table.unknownBloodType")}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-start">
                         <div className="flex items-center gap-2">
-                          {isEditing ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => void handleUpdateBloodType(patient)}
-                                disabled={isWorking}
-                                aria-label={t("patients.actions.save")}
-                                className="rounded-lg p-2 text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingPatientId(null)}
-                                disabled={isWorking}
-                                aria-label={t("patients.actions.cancel")}
-                                className="rounded-lg p-2 text-secondary transition-colors hover:bg-slate-100 disabled:opacity-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => beginEditing(patient)}
-                              disabled={Boolean(workingPatientId)}
-                              aria-label={t("patients.actions.editBloodType")}
-                              className="rounded-lg p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => void beginEditing(patient)}
+                            disabled={Boolean(workingPatientId)}
+                            aria-label={t("patients.actions.editPatient")}
+                            className="rounded-lg p-2 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
                           {isAdmin && (
                             <button
                               type="button"
@@ -375,7 +383,9 @@ export default function Patients({ user, searchTerm }: PatientsProps) {
       {showModal && (
         <PatientModal
           onClose={() => setShowModal(false)}
-          onSaveSuccess={handlePatientCreated}
+          onSaveSuccess={handlePatientSaved}
+          patient={editingPatient ?? undefined}
+          personalInfoId={editingPersonalInfoId ?? undefined}
         />
       )}
     </div>

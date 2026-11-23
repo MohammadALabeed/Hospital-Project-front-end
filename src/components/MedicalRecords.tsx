@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   CheckCircle,
@@ -21,6 +21,7 @@ import {
   parseDirectoryPeople,
   type DirectoryPerson,
 } from "../personDirectory.js";
+import SearchablePersonSelect from "./SearchablePersonSelect.jsx";
 
 interface MedicalRecord {
   RecordID: number | string;
@@ -58,6 +59,7 @@ interface PrescriptionPayload {
 
 interface MedicalRecordsProps {
   user: UserSession;
+  searchTerm: string;
 }
 
 interface MedicalBoardDetails {
@@ -345,7 +347,7 @@ const getAgreementScorePercent = (score: number) =>
 const getAgreementPercentage = (score: number) =>
   Math.round(getAgreementScorePercent(score));
 
-export default function MedicalRecords({ user }: MedicalRecordsProps) {
+export default function MedicalRecords({ user, searchTerm }: MedicalRecordsProps) {
   const { t, i18n } = useTranslation();
   const canManagePrescriptions =
     user.roleId === RoleID.Admin || user.roleId === RoleID.Doctor;
@@ -390,6 +392,31 @@ export default function MedicalRecords({ user }: MedicalRecordsProps) {
   const [prescriptionMedication, setPrescriptionMedication] = useState("");
   const [prescriptionDosage, setPrescriptionDosage] = useState("");
   const [prescriptionNotes, setPrescriptionNotes] = useState("");
+
+  const sortedRecords = useMemo(
+    () =>
+      [...records].sort(
+        (firstRecord, secondRecord) => Number(firstRecord.RecordID) - Number(secondRecord.RecordID),
+      ),
+    [records],
+  );
+  const filteredRecords = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase();
+    if (!query) return sortedRecords;
+    return sortedRecords.filter((record) =>
+      [
+        record.RecordID,
+        record.PatientID,
+        record.DoctorID,
+        record.PatientName,
+        record.DoctorName,
+        record.Diagnosis,
+        record.TreatmentPlan,
+        getPersonLabel(record.PatientName, record.PatientID, patientOptions),
+        getPersonLabel(record.DoctorName, record.DoctorID, doctorOptions),
+      ].some((value) => String(value ?? "").toLocaleLowerCase().includes(query)),
+    );
+  }, [doctorOptions, patientOptions, searchTerm, sortedRecords]);
 
   const fetchRecords = async () => {
     setLoading(true);
@@ -793,54 +820,42 @@ export default function MedicalRecords({ user }: MedicalRecordsProps) {
               <label htmlFor="record-patient-id" className="text-xs font-semibold text-on-surface-variant block text-start">
                 {t("medicalRecords.form.patientId")}
               </label>
-              <select
+              <SearchablePersonSelect
                 id="record-patient-id"
-                required
                 disabled={directoryLoading || patientOptions.length === 0}
                 value={patientId}
-                onChange={(event) => setPatientId(event.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans text-start"
-              >
-                <option value="">
-                  {directoryLoading
+                people={patientOptions}
+                onChange={setPatientId}
+                placeholder={
+                  directoryLoading
                     ? t("medicalRecords.form.loadingPatients")
                     : patientOptions.length
-                      ? t("medicalRecords.form.selectPatientPlaceholder")
-                      : t("medicalRecords.form.noPatientsAvailable")}
-                </option>
-                {patientOptions.map((person) => (
-                  <option key={person.id} value={person.id} dir="auto">
-                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
-                  </option>
-                ))}
-              </select>
+                      ? t("common.searchByNameOrId")
+                      : t("medicalRecords.form.noPatientsAvailable")
+                }
+                noResultsMessage={t("common.noSearchResults")}
+              />
             </div>
 
             <div className="space-y-1">
               <label htmlFor="record-doctor-id" className="text-xs font-semibold text-on-surface-variant block text-start">
                 {t("medicalRecords.form.doctorId")}
               </label>
-              <select
+              <SearchablePersonSelect
                 id="record-doctor-id"
-                required
                 disabled={directoryLoading || doctorOptions.length === 0}
                 value={doctorId}
-                onChange={(event) => setDoctorId(event.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-sm font-sans text-start"
-              >
-                <option value="">
-                  {directoryLoading
+                people={doctorOptions}
+                onChange={setDoctorId}
+                placeholder={
+                  directoryLoading
                     ? t("medicalRecords.form.loadingDoctors")
                     : doctorOptions.length
-                      ? t("medicalRecords.form.selectDoctorPlaceholder")
-                      : t("medicalRecords.form.noDoctorsAvailable")}
-                </option>
-                {doctorOptions.map((person) => (
-                  <option key={person.id} value={person.id} dir="auto">
-                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
-                  </option>
-                ))}
-              </select>
+                      ? t("common.searchByNameOrId")
+                      : t("medicalRecords.form.noDoctorsAvailable")
+                }
+                noResultsMessage={t("common.noSearchResults")}
+              />
             </div>
 
             <div className="space-y-1">
@@ -916,6 +931,10 @@ export default function MedicalRecords({ user }: MedicalRecordsProps) {
               <div className="p-16 text-center text-secondary font-semibold">
                 {t("medicalRecords.table.noRecords")}
               </div>
+            ) : filteredRecords.length === 0 ? (
+              <div className="p-16 text-center text-secondary font-semibold">
+                {t("medicalRecords.table.noSearchResults", { term: searchTerm })}
+              </div>
             ) : (
               <table className="w-full border-collapse">
                 <thead className="bg-[#f8fafc] border-b border-outline-variant">
@@ -929,7 +948,7 @@ export default function MedicalRecords({ user }: MedicalRecordsProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant font-sans text-xs">
-                  {records.map((record) => {
+                  {filteredRecords.map((record, index) => {
                     const recordKey = getRecordKey(record.RecordID);
                     const report = boardDetails[recordKey];
                     const isConsulting = consultingRecordId === recordKey;
@@ -953,7 +972,7 @@ export default function MedicalRecords({ user }: MedicalRecordsProps) {
                         <tr className="hover:bg-primary/5 transition-colors">
                           <td className="px-5 py-4 text-start">
                             <span className="inline-flex items-center rounded-lg border border-primary/15 bg-primary/5 px-3 py-1.5 font-mono text-sm font-bold tracking-wide text-primary">
-                              #{record.RecordID}
+                              #{index + 1}
                             </span>
                           </td>
                           <td className="px-5 py-4 font-semibold text-on-surface text-start">

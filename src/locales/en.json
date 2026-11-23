@@ -11,7 +11,9 @@
   "common": {
     "brandName": "MedCenter Pro",
     "languageEnglish": "English",
-    "languageArabic": "العربية"
+    "languageArabic": "العربية",
+    "searchByNameOrId": "Search by name or ID...",
+    "noSearchResults": "No matching results."
   },
   "login": {
     "title": "Unified Medical Portal",
@@ -39,6 +41,7 @@
       "patients": "Patients Registry",
       "appointments": "Appointments Schedule",
       "medicalRecords": "Medical Records",
+      "doctors": "Doctors Staff",
       "systemBrand": "Hospital System",
       "logout": "Log Out Session"
     },
@@ -50,13 +53,25 @@
       "staff": "Staff"
     },
     "navbar": {
-      "searchPlaceholder": "Search patients, appointments, or medical charts...",
+      "searchPlaceholder": "Search patients, doctors, appointments, or medical records...",
       "profileTooltip": "Physician Profile",
       "statusOnline": "System: Online",
       "statusOffline": "System: Offline",
       "noNotifications": "No new system notifications.",
       "settingsMaintenance": "Settings panel is under maintenance.",
-      "documentationSupport": "Documentation and support gateway."
+      "documentationSupport": "Documentation and support gateway.",
+      "notificationsComingSoon": "Coming soon: Notifications",
+      "settingsComingSoon": "Coming soon: Settings",
+      "quickGuideTitle": "Quick User Guide — Smart Medical Board System",
+      "quickGuidePatientsAppointments": "Manage patient records and schedule medical appointments from their dedicated pages.",
+      "quickGuideMedicalBoard": "Add a medical record and run a multi-agent Smart Medical Board consultation (GPT-4, Claude-3.5, and Gemini-Pro) to detect drug interactions, then review and approve reports.",
+      "quickGuidePermissions": "Role-based access control (RBAC) assigns permissions according to the user's role: System Admin (Admin) and Doctor (Doctor).",
+      "closeGuide": "Close guide",
+      "quickSearchLoading": "Searching...",
+      "quickSearchResults": "Quick search results",
+      "quickSearchNoResults": "No matching results.",
+      "quickSearchFailed": "Could not load search results.",
+      "quickSearchUnavailable": "Quick search is unavailable for this role."
     }
   },
   "overview": {
@@ -81,6 +96,18 @@
       "doctorsSubtitle": "Total doctors registered at the hospital",
       "loading": "Loading statistics"
     },
+    "recent": {
+      "title": "Clinical Activity Summary",
+      "appointments": "Latest Scheduled Appointments",
+      "medicalRecords": "Latest Medical Records",
+      "drugInteractions": "Drug Interaction Cases",
+      "interactionRecord": "Medical record #{{id}}",
+      "warningCount": "{{count}} drug warning(s)",
+      "empty": "There are no recent items to display.",
+      "noInteractions": "No drug interactions have been detected.",
+      "loadFailed": "Could not load the clinical activity summary.",
+      "invalidDate": "Invalid date"
+    },
     "charts": {
       "title": "Weekly Patient Inflow Traffic",
       "admissions": "Admissions",
@@ -99,9 +126,10 @@
     "errors": {
       "schemaError": "API returned unexpected patient schema formatting.",
       "fetchFailed": "Failed to query patients records from central Node.js/SQL hub.",
-      "updateFailed": "Could not update the patient's blood type.",
+      "updateFailed": "Could not update the patient details.",
       "deleteFailed": "Could not delete the patient record.",
-      "bloodTypeRequired": "Please select a blood type."
+      "bloodTypeRequired": "Please select a blood type.",
+      "personalInfoLookupFailed": "Could not load this patient's personal information for editing."
     },
     "stats": {
       "totalLabel": "Total Patients Registry",
@@ -128,6 +156,7 @@
         "userId": "User ID",
         "email": "Email",
         "phone": "Phone",
+        "address": "Address",
         "dateOfBirth": "Date of birth",
         "bloodType": "Blood Type",
         "action": "Actions"
@@ -135,13 +164,14 @@
     },
     "actions": {
       "editBloodType": "Edit blood type",
+      "editPatient": "Edit patient details",
       "save": "Save",
       "cancel": "Cancel",
       "delete": "Delete patient"
     },
     "notifications": {
       "created": "Patient added successfully.",
-      "updated": "Patient blood type updated.",
+      "updated": "Patient details updated successfully.",
       "deleted": "Patient record deleted."
     },
     "status": {
@@ -164,12 +194,71 @@
       "title": "Operational Hospital Analytics"
     }
   },
+  "doctors": {
+    "header": {
+      "title": "Doctors Staff",
+      "subtitle": "View and manage doctors registered in the system.",
+      "addButton": "Add New Doctor"
+    },
+    "notifications": {
+      "created": "Doctor account and profile created successfully."
+    },
+    "errors": {
+      "schemaError": "The server returned doctor data in an unexpected format.",
+      "fetchFailed": "Could not load the doctor directory.",
+      "requiredFields": "Please complete all required fields.",
+      "userCreateFailed": "Could not create the doctor's user account.",
+      "personalInfoCreateFailed": "The account was created, but personal information could not be saved. Save again to retry.",
+      "doctorCreateFailed": "The account and personal information were saved, but the doctor record could not be created. Save again to retry."
+    },
+    "form": {
+      "title": "Add New Doctor",
+      "subtitle": "Enter account, personal, and specialty details.",
+      "Username": "Username",
+      "UsernamePlaceholder": "Enter an alphanumeric username",
+      "Password": "Password",
+      "PasswordPlaceholder": "Enter a password of at least 8 characters",
+      "FullName": "Full name",
+      "FullNamePlaceholder": "Enter the doctor's full name",
+      "Email": "Email",
+      "EmailPlaceholder": "Enter email address",
+      "Address": "Address",
+      "AddressPlaceholder": "Enter address",
+      "DateOfBirth": "Date of birth",
+      "DateOfBirthPlaceholder": "Select date of birth",
+      "Gender": "Gender",
+      "genderPlaceholder": "Select gender",
+      "Specialization": "Specialization",
+      "SpecializationPlaceholder": "Enter medical specialization",
+      "ClinicNumber": "Clinic number",
+      "ClinicNumberPlaceholder": "Enter clinic number",
+      "save": "Create Doctor",
+      "cancel": "Cancel",
+      "close": "Close dialog"
+    },
+    "table": {
+      "title": "Registered Doctors",
+      "total": "Doctors: {{count}}",
+      "loading": "Loading doctor data...",
+      "retry": "Retry",
+      "empty": "No doctors are registered.",
+      "noSearchResults": "No doctors matched: {{term}}",
+      "name": "Full name",
+      "specialization": "Specialization",
+      "email": "Email",
+      "address": "Address",
+      "notProvided": "Not provided"
+    }
+  },
   "patientModal": {
     "title": "Register New Patient Record",
     "subtitle": "Complete the details below to create a new clinical profile.",
+    "editTitle": "Edit Patient Details",
+    "editSubtitle": "Update this patient's personal and medical information.",
     "errors": {
       "requiredFields": "Please populate all required personal and clinical fields.",
       "saveFailed": "Failed to write patient file to central directory.",
+      "updateFailed": "Failed to save the patient changes.",
       "networkError": "Network error connecting to SQL Database coordinator."
     },
     "sections": {
@@ -236,7 +325,8 @@
     },
     "buttons": {
       "cancel": "Cancel",
-      "save": "Save Patient Record"
+      "save": "Save Patient Record",
+      "saveChanges": "Save Changes"
     }
   },
   "appointments": {
@@ -245,6 +335,7 @@
     "scheduleButton": "Book New Appointment",
     "loading": "Loading scheduled appointments from SQL Server...",
     "noAppointments": "No appointments scheduled for the selected period.",
+    "searchNoResults": "No appointments matched: {{term}}",
     "form": {
       "title": "Book Appointment",
       "patientIdLabel": "Patient ID",
@@ -344,6 +435,7 @@
       "actions": "Actions",
       "loading": "Loading medical records...",
       "noRecords": "There are no medical records to display.",
+      "noSearchResults": "No medical records matched: {{term}}",
       "privacyNotice": "Medical records are subject to internal auditing protocols."
     },
     "prescriptions": {

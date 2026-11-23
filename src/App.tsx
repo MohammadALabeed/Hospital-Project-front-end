@@ -6,7 +6,8 @@ import Overview from "./components/Overview";
 import Patients from "./components/Patients";
 import Appointments from "./components/Appointments";
 import MedicalRecords from "./components/MedicalRecords";
-import { UserSession } from "./types.js";
+import Doctors from "./components/Doctors";
+import { RoleID, UserSession } from "./types.js";
 import { apiClient } from "./api.js";
 
 const SESSION_STORAGE_KEY = "app_user_session";
@@ -201,8 +202,15 @@ export default function App() {
       {currentTab === "patients" && (
         <Patients user={session} searchTerm={searchTerm} />
       )}
-      {currentTab === "appointments" && <Appointments user={session} />}
-      {currentTab === "medical-records" && <MedicalRecords user={session} />}
+      {currentTab === "appointments" && (
+        <Appointments user={session} searchTerm={searchTerm} />
+      )}
+      {currentTab === "medical-records" && (
+        <MedicalRecords user={session} searchTerm={searchTerm} />
+      )}
+      {currentTab === "doctors" && session.roleId === RoleID.Admin && (
+        <Doctors user={session} searchTerm={searchTerm} />
+      )}
     </Layout>
   );
 }

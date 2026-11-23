@@ -11,7 +11,9 @@
   "common": {
     "brandName": "مركز ميد سنتر برو",
     "languageEnglish": "الإنجليزية",
-    "languageArabic": "العربية"
+    "languageArabic": "العربية",
+    "searchByNameOrId": "ابحث بالاسم أو الرقم...",
+    "noSearchResults": "لا توجد نتائج مطابقة."
   },
   "login": {
     "title": "بوابة النظام الطبي الموحد",
@@ -39,6 +41,7 @@
       "patients": "سجل المراجعين والمرضى",
       "appointments": "جدول المواعيد الطبية",
       "medicalRecords": "السجلات والتقارير",
+      "doctors": "الكادر الطبي",
       "systemBrand": "نظام إدارة المستشفيات والمراكز الطبية",
       "logout": "تسجيل الخروج من النظام"
     },
@@ -50,13 +53,25 @@
       "staff": "طاقم طبي متاح"
     },
     "navbar": {
-      "searchPlaceholder": "ابحث عن المرضى، المواعيد، أو المعرفات الطبية...",
+      "searchPlaceholder": "ابحث عن المرضى، الأطباء، المواعيد، أو السجلات الطبية...",
       "profileTooltip": "الملف الشخصي للطبيب",
       "statusOnline": "حالة النظام: متصل",
       "statusOffline": "حالة النظام: غير متصل",
       "noNotifications": "لا توجد إشعارات جديدة للنظام.",
       "settingsMaintenance": "لوحة الإعدادات قيد الصيانة.",
-      "documentationSupport": "بوابة التوثيق والدعم."
+      "documentationSupport": "بوابة التوثيق والدعم.",
+      "notificationsComingSoon": "قريباً: الإشعارات",
+      "settingsComingSoon": "قريباً: الإعدادات",
+      "quickGuideTitle": "دليل الاستخدام السريع — نظام المجلس الطبي الذكي",
+      "quickGuidePatientsAppointments": "إدارة سجلات المرضى وجدولة المواعيد الطبية من الصفحات المخصصة.",
+      "quickGuideMedicalBoard": "أضف سجلاً طبياً وشغّل استشارة المجلس الذكي متعدد الوكلاء (GPT-4 وClaude-3.5 وGemini-Pro) لكشف التداخلات الدوائية، ثم راجع التقارير واعتمدها.",
+      "quickGuidePermissions": "تُحدد صلاحيات التحكم المبني على الأدوار (RBAC) بحسب الدور: مدير النظام (Admin) والطبيب (Doctor).",
+      "closeGuide": "إغلاق الدليل",
+      "quickSearchLoading": "جارٍ البحث...",
+      "quickSearchResults": "نتائج البحث السريع",
+      "quickSearchNoResults": "لا توجد نتائج مطابقة.",
+      "quickSearchFailed": "تعذر تحميل نتائج البحث.",
+      "quickSearchUnavailable": "البحث السريع غير متاح لهذا الدور."
     }
   },
   "overview": {
@@ -81,6 +96,18 @@
       "doctorsSubtitle": "إجمالي الأطباء المسجلين في المستشفى",
       "loading": "جارٍ تحميل الإحصائيات"
     },
+    "recent": {
+      "title": "ملخص النشاط الطبي",
+      "appointments": "أحدث المواعيد المجدولة",
+      "medicalRecords": "أحدث السجلات الطبية",
+      "drugInteractions": "حالات التداخل الدوائي",
+      "interactionRecord": "السجل الطبي رقم #{{id}}",
+      "warningCount": "{{count}} تحذير دوائي",
+      "empty": "لا توجد عناصر حديثة لعرضها.",
+      "noInteractions": "لم تُكتشف حالات تداخل دوائي.",
+      "loadFailed": "تعذر تحميل ملخص النشاط الطبي.",
+      "invalidDate": "تاريخ غير صالح"
+    },
     "charts": {
       "title": "معدل تدفق المرضى الأسبوعي",
       "admissions": "حالات الدخول",
@@ -96,15 +123,16 @@
     "notifications": {
       "registered": "تم تسجيل المريض {{name}} بنجاح! الرقم التعريفي المعين: {{id}}",
       "created": "تمت إضافة المريض بنجاح.",
-      "updated": "تم تحديث فصيلة دم المريض.",
+      "updated": "تم تحديث بيانات المريض بنجاح.",
       "deleted": "تم حذف سجل المريض."
     },
     "errors": {
       "schemaError": "أعاد الخادم بيانات المرضى بتنسيق غير متوقع.",
       "fetchFailed": "فشل جلب سجلات المرضى من قاعدة البيانات.",
-      "updateFailed": "تعذر تحديث فصيلة دم المريض.",
+      "updateFailed": "تعذر تحديث بيانات المريض.",
       "deleteFailed": "تعذر حذف سجل المريض.",
-      "bloodTypeRequired": "يرجى اختيار فصيلة الدم."
+      "bloodTypeRequired": "يرجى اختيار فصيلة الدم.",
+      "personalInfoLookupFailed": "تعذر تحميل البيانات الشخصية للمريض للتعديل."
     },
     "stats": {
       "totalLabel": "إجمالي سجلات المرضى",
@@ -131,6 +159,7 @@
         "userId": "رقم المستخدم",
         "email": "البريد الإلكتروني",
         "phone": "رقم الهاتف",
+        "address": "العنوان",
         "dateOfBirth": "تاريخ الميلاد",
         "bloodType": "فصيلة الدم",
         "action": "الإجراءات"
@@ -138,6 +167,7 @@
     },
     "actions": {
       "editBloodType": "تعديل فصيلة الدم",
+      "editPatient": "تعديل بيانات المريض",
       "save": "حفظ",
       "cancel": "إلغاء",
       "delete": "حذف المريض"
@@ -162,12 +192,71 @@
       "title": "التحليلات التشغيلية للمستشفى"
     }
   },
+  "doctors": {
+    "header": {
+      "title": "الكادر الطبي",
+      "subtitle": "عرض وإدارة الأطباء المسجلين في النظام.",
+      "addButton": "إضافة طبيب جديد"
+    },
+    "notifications": {
+      "created": "تم إنشاء حساب الطبيب وإضافة بياناته بنجاح."
+    },
+    "errors": {
+      "schemaError": "أعاد الخادم بيانات الأطباء بتنسيق غير متوقع.",
+      "fetchFailed": "تعذر تحميل قائمة الأطباء.",
+      "requiredFields": "يرجى إكمال جميع الحقول المطلوبة.",
+      "userCreateFailed": "تعذر إنشاء حساب المستخدم للطبيب.",
+      "personalInfoCreateFailed": "تم إنشاء الحساب، لكن تعذرت إضافة البيانات الشخصية. أعد الحفظ للمحاولة مجدداً.",
+      "doctorCreateFailed": "تم إنشاء الحساب والبيانات الشخصية، لكن تعذرت إضافة سجل الطبيب. أعد الحفظ للمحاولة مجدداً."
+    },
+    "form": {
+      "title": "إضافة طبيب جديد",
+      "subtitle": "أدخل بيانات الحساب والبيانات الشخصية والتخصص.",
+      "Username": "اسم المستخدم",
+      "UsernamePlaceholder": "أدخل اسم مستخدم إنجليزياً",
+      "Password": "كلمة المرور",
+      "PasswordPlaceholder": "أدخل كلمة مرور من 8 أحرف على الأقل",
+      "FullName": "الاسم الكامل",
+      "FullNamePlaceholder": "أدخل الاسم الكامل للطبيب",
+      "Email": "البريد الإلكتروني",
+      "EmailPlaceholder": "أدخل البريد الإلكتروني",
+      "Address": "العنوان",
+      "AddressPlaceholder": "أدخل العنوان",
+      "DateOfBirth": "تاريخ الميلاد",
+      "DateOfBirthPlaceholder": "اختر تاريخ الميلاد",
+      "Gender": "الجنس",
+      "genderPlaceholder": "اختر الجنس",
+      "Specialization": "التخصص",
+      "SpecializationPlaceholder": "أدخل التخصص الطبي",
+      "ClinicNumber": "رقم العيادة",
+      "ClinicNumberPlaceholder": "أدخل رقم العيادة",
+      "save": "إنشاء الطبيب",
+      "cancel": "إلغاء",
+      "close": "إغلاق النافذة"
+    },
+    "table": {
+      "title": "الأطباء المسجلون",
+      "total": "عدد الأطباء: {{count}}",
+      "loading": "جارٍ تحميل بيانات الأطباء...",
+      "retry": "إعادة المحاولة",
+      "empty": "لا يوجد أطباء مسجلون.",
+      "noSearchResults": "لا يوجد أطباء مطابقون للبحث: {{term}}",
+      "name": "الاسم الكامل",
+      "specialization": "التخصص",
+      "email": "البريد الإلكتروني",
+      "address": "العنوان",
+      "notProvided": "غير متوفر"
+    }
+  },
   "patientModal": {
     "title": "تسجيل مريض جديد في النظام",
     "subtitle": "أكمل التفاصيل أدناه لإنشاء ملف تعريف سريري جديد.",
+    "editTitle": "تعديل بيانات المريض",
+    "editSubtitle": "حدّث البيانات الشخصية والطبية للمريض.",
     "errors": {
       "requiredFields": "يرجى ملء جميع الحقول الشخصية والسريرية المطلوبة.",
       "saveFailed": "فشل في كتابة ملف المريض في الدليل المركزي.",
+      "updateFailed": "تعذر حفظ تعديلات المريض.",
       "networkError": "خطأ في الشبكة أثناء الاتصال بقاعدة البيانات."
     },
     "sections": {
@@ -234,7 +323,8 @@
     },
     "buttons": {
       "cancel": "إلغاء الأمر",
-      "save": "حفظ سجل المريض"
+      "save": "حفظ سجل المريض",
+      "saveChanges": "حفظ التعديلات"
     }
   },
   "appointments": {
@@ -243,6 +333,7 @@
     "scheduleButton": "حجز موعد جديد",
     "loading": "جارٍ جلب المواعيد المقررة من الخادم...",
     "noAppointments": "لا توجد مواعيد مجدولة للفترة المحددة.",
+    "searchNoResults": "لا توجد مواعيد مطابقة للبحث: {{term}}",
     "form": {
       "title": "جدولة موعد جديد",
       "patientIdLabel": "رقم المريض",
@@ -342,6 +433,7 @@
       "actions": "الإجراءات",
       "loading": "جاري تحميل السجلات الطبية...",
       "noRecords": "لا توجد سجلات طبية لعرضها.",
+      "noSearchResults": "لا توجد سجلات مطابقة للبحث: {{term}}",
       "privacyNotice": "تخضع السجلات الطبية لبروتوكولات التدقيق الداخلي."
     },
     "prescriptions": {

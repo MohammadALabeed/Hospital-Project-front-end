@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Calendar, CheckCircle2, Clock, Loader2, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Calendar, CheckCircle2, Clock, Loader2, Pencil, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
 import {
@@ -7,10 +7,12 @@ import {
   parseDirectoryPeople,
   type DirectoryPerson,
 } from "../personDirectory.js";
+import SearchablePersonSelect from "./SearchablePersonSelect.jsx";
 import { RoleID, type UserSession } from "../types.js";
 
 interface AppointmentsProps {
   user: UserSession;
+  searchTerm: string;
 }
 
 interface AppointmentRecord {
@@ -63,7 +65,7 @@ const appointmentStatuses: AppointmentStatus[] = [
   "Cancelled",
 ];
 
-export default function Appointments({ user }: AppointmentsProps) {
+export default function Appointments({ user, searchTerm }: AppointmentsProps) {
   const { t, i18n } = useTranslation();
   const isAdmin = user.roleId === RoleID.Admin;
   const [appointments, setAppointments] = useState<AppointmentRecord[]>([]);
@@ -79,6 +81,15 @@ export default function Appointments({ user }: AppointmentsProps) {
   const [appointmentDate, setAppointmentDate] = useState("");
   const [status, setStatus] = useState<AppointmentStatus>("Scheduled");
   const [workingAppointmentId, setWorkingAppointmentId] = useState<string | null>(null);
+
+  const sortedAppointments = useMemo(
+    () =>
+      [...appointments].sort(
+        (firstAppointment, secondAppointment) =>
+          Number(firstAppointment.AppointmentID) - Number(secondAppointment.AppointmentID),
+      ),
+    [appointments],
+  );
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -283,6 +294,24 @@ export default function Appointments({ user }: AppointmentsProps) {
       : appointmentStatus;
   };
 
+  const filteredAppointments = useMemo(() => {
+    const query = searchTerm.trim().toLocaleLowerCase();
+    if (!query) return sortedAppointments;
+    return sortedAppointments.filter((appointment) =>
+      [
+        appointment.AppointmentID,
+        appointment.PatientID,
+        appointment.DoctorID,
+        appointment.PatientName,
+        appointment.DoctorName,
+        appointment.AppointmentDate,
+        appointment.Status,
+        getPersonLabel(appointment.PatientName, appointment.PatientID, patientOptions),
+        getPersonLabel(appointment.DoctorName, appointment.DoctorID, doctorOptions),
+      ].some((value) => String(value ?? "").toLocaleLowerCase().includes(query)),
+    );
+  }, [doctorOptions, patientOptions, searchTerm, sortedAppointments]);
+
   return (
     <div
       dir={i18n.language.startsWith("ar") ? "rtl" : "ltr"}
@@ -319,53 +348,41 @@ export default function Appointments({ user }: AppointmentsProps) {
               <label htmlFor="appointment-patient-id" className="block text-xs font-semibold text-on-surface-variant">
                 {t("appointments.form.patientIdLabel")}
               </label>
-              <select
+              <SearchablePersonSelect
                 id="appointment-patient-id"
-                required
                 disabled={directoryLoading || patientOptions.length === 0}
                 value={patientId}
-                onChange={(event) => setPatientId(event.target.value)}
-                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-              >
-                <option value="">
-                  {directoryLoading
+                people={patientOptions}
+                onChange={setPatientId}
+                placeholder={
+                  directoryLoading
                     ? t("appointments.form.loadingPatients")
                     : patientOptions.length
-                      ? t("appointments.form.selectPatientPlaceholder")
-                      : t("appointments.form.noPatientsAvailable")}
-                </option>
-                {patientOptions.map((person) => (
-                  <option key={person.id} value={person.id} dir="auto">
-                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
-                  </option>
-                ))}
-              </select>
+                      ? t("common.searchByNameOrId")
+                      : t("appointments.form.noPatientsAvailable")
+                }
+                noResultsMessage={t("common.noSearchResults")}
+              />
             </div>
             <div className="space-y-1">
               <label htmlFor="appointment-doctor-id" className="block text-xs font-semibold text-on-surface-variant">
                 {t("appointments.form.doctorIdLabel")}
               </label>
-              <select
+              <SearchablePersonSelect
                 id="appointment-doctor-id"
-                required
                 disabled={directoryLoading || doctorOptions.length === 0}
                 value={doctorId}
-                onChange={(event) => setDoctorId(event.target.value)}
-                className="w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary"
-              >
-                <option value="">
-                  {directoryLoading
+                people={doctorOptions}
+                onChange={setDoctorId}
+                placeholder={
+                  directoryLoading
                     ? t("appointments.form.loadingDoctors")
                     : doctorOptions.length
-                      ? t("appointments.form.selectDoctorPlaceholder")
-                      : t("appointments.form.noDoctorsAvailable")}
-                </option>
-                {doctorOptions.map((person) => (
-                  <option key={person.id} value={person.id} dir="auto">
-                    {person.name ? `${person.name} (#${person.id})` : `#${person.id}`}
-                  </option>
-                ))}
-              </select>
+                      ? t("common.searchByNameOrId")
+                      : t("appointments.form.noDoctorsAvailable")
+                }
+                noResultsMessage={t("common.noSearchResults")}
+              />
             </div>
             <div className="space-y-1">
               <label htmlFor="appointment-date" className="block text-xs font-semibold text-on-surface-variant">
@@ -441,6 +458,10 @@ export default function Appointments({ user }: AppointmentsProps) {
               <div className="p-16 text-center text-sm font-semibold text-secondary">
                 {t("appointments.noAppointments")}
               </div>
+            ) : filteredAppointments.length === 0 ? (
+              <div className="p-16 text-center text-sm font-semibold text-secondary">
+                {t("appointments.searchNoResults", { term: searchTerm })}
+              </div>
             ) : (
               <table className="w-full border-collapse">
                 <thead className="border-b border-outline-variant bg-slate-50">
@@ -466,13 +487,13 @@ export default function Appointments({ user }: AppointmentsProps) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant text-xs">
-                  {appointments.map((appointment) => {
+                  {filteredAppointments.map((appointment, index) => {
                     const appointmentKey = getAppointmentKey(appointment.AppointmentID);
                     const isWorking = workingAppointmentId === appointmentKey;
                     return (
                       <tr key={appointmentKey} className="transition-colors hover:bg-primary/5">
                         <td className="px-5 py-4 text-start font-mono text-sm font-bold text-primary">
-                          #{appointment.AppointmentID}
+                          #{index + 1}
                         </td>
                         <td className="px-5 py-4 text-start font-semibold text-on-surface">
                           <span dir="auto">
@@ -499,29 +520,38 @@ export default function Appointments({ user }: AppointmentsProps) {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-start">
-                          <select
-                            aria-label={t("appointments.table.editStatus", {
-                              id: appointment.AppointmentID,
-                            })}
-                            value={appointment.Status}
-                            disabled={isWorking || Boolean(workingAppointmentId)}
-                            onChange={(event) => {
-                              if (isAppointmentStatus(event.target.value)) {
-                                void handleStatusChange(appointment, event.target.value);
-                              }
-                            }}
-                            className={`rounded-full border px-3 py-1 text-xs font-bold outline-none disabled:opacity-60 ${getStatusStyle(appointment.Status)}`}
-                          >
-                            {!appointmentStatuses.some(
-                              (knownStatus) =>
-                                knownStatus.toLowerCase() === appointment.Status.trim().toLowerCase(),
-                            ) && <option value={appointment.Status}>{appointment.Status}</option>}
-                            {appointmentStatuses.map((appointmentStatus) => (
-                              <option key={appointmentStatus} value={appointmentStatus}>
-                                {getStatusLabel(appointmentStatus)}
-                              </option>
-                            ))}
-                          </select>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span
+                              title={t("appointments.table.editStatus", {
+                                id: appointment.AppointmentID,
+                              })}
+                            >
+                              <Pencil aria-hidden="true" className="h-3.5 w-3.5 text-primary" />
+                            </span>
+                            <select
+                              aria-label={t("appointments.table.editStatus", {
+                                id: appointment.AppointmentID,
+                              })}
+                              value={appointment.Status}
+                              disabled={isWorking || Boolean(workingAppointmentId)}
+                              onChange={(event) => {
+                                if (isAppointmentStatus(event.target.value)) {
+                                  void handleStatusChange(appointment, event.target.value);
+                                }
+                              }}
+                              className={`rounded-full border px-3 py-1 text-xs font-bold outline-none disabled:opacity-60 ${getStatusStyle(appointment.Status)}`}
+                            >
+                              {!appointmentStatuses.some(
+                                (knownStatus) =>
+                                  knownStatus.toLowerCase() === appointment.Status.trim().toLowerCase(),
+                              ) && <option value={appointment.Status}>{appointment.Status}</option>}
+                              {appointmentStatuses.map((appointmentStatus) => (
+                                <option key={appointmentStatus} value={appointmentStatus}>
+                                  {getStatusLabel(appointmentStatus)}
+                                </option>
+                              ))}
+                            </select>
+                          </span>
                         </td>
                         <td className="px-5 py-4 text-start">
                           {isAdmin && (

@@ -1,5 +1,5 @@
 // الإطار الخارجي للنظام
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BriefcaseMedical,
   LayoutDashboard,
@@ -11,9 +11,12 @@ import {
   Bell,
   Settings,
   HelpCircle,
+  Stethoscope,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { UserSession, RoleID } from "../types.js";
+import { apiClient } from "../api.js";
 
 // شروط البيانات المستقبلة (Props) للمكون
 interface LayoutProps {
@@ -26,6 +29,73 @@ interface LayoutProps {
   onSearchChange: (val: string) => void;
 }
 
+type SearchTab = "patients" | "appointments" | "medical-records" | "doctors";
+
+interface QuickSearchResult {
+  key: string;
+  label: string;
+  detail: string;
+  tab: SearchTab;
+}
+
+interface QuickSearchSource {
+  data: unknown;
+  idField: string;
+  nameFields: string[];
+  searchFields: string[];
+  category: string;
+  tab: SearchTab;
+}
+
+const getSearchRecords = (value: unknown): Record<string, unknown>[] => {
+  if (
+    !Array.isArray(value) ||
+    !value.every(
+      (record) =>
+        record !== null && typeof record === "object" && !Array.isArray(record),
+    )
+  ) {
+    throw new Error("The server returned an unexpected global search response.");
+  }
+  return value as Record<string, unknown>[];
+};
+
+const getSearchText = (value: unknown) =>
+  typeof value === "string" || typeof value === "number" ? String(value) : "";
+
+const buildQuickSearchResults = (
+  query: string,
+  sources: QuickSearchSource[],
+): QuickSearchResult[] => {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const results: QuickSearchResult[] = [];
+
+  sources.forEach((source) => {
+    getSearchRecords(source.data).forEach((record) => {
+      const id = getSearchText(record[source.idField]);
+      if (!id) throw new Error(`The ${source.tab} search result is missing its ID.`);
+
+      const name = source.nameFields
+        .map((field) => getSearchText(record[field]).trim())
+        .find(Boolean);
+      const detailValues = source.searchFields
+        .map((field) => getSearchText(record[field]).trim())
+        .filter(Boolean);
+      const searchableText = [id, name, ...detailValues].join(" ").toLocaleLowerCase();
+      if (!searchableText.includes(normalizedQuery)) return;
+
+      results.push({
+        key: `${source.tab}:${id}`,
+        label: name || `#${id}`,
+        detail: `${source.category} · #${id}`,
+        tab: source.tab,
+      });
+    });
+  });
+
+  return results.slice(0, 10);
+};
+
 export default function Layout({
   children,
   currentTab,
@@ -36,7 +106,144 @@ export default function Layout({
   onSearchChange,
 }: LayoutProps) {
   const { t, i18n } = useTranslation();
-  const [serverOnline, setServerOnline] = useState(true);
+  const [serverOnline, setServerOnline] = useState(false);
+  const [showQuickGuide, setShowQuickGuide] = useState(false);
+  const [quickSearchResults, setQuickSearchResults] = useState<QuickSearchResult[]>([]);
+  const [quickSearchLoading, setQuickSearchLoading] = useState(false);
+  const [quickSearchError, setQuickSearchError] = useState<string | null>(null);
+  const [quickSearchFocused, setQuickSearchFocused] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkServerStatus = async () => {
+      try {
+        await apiClient.get("/health", { timeout: 5000 });
+        if (isMounted) setServerOnline(true);
+      } catch {
+        if (isMounted) setServerOnline(false);
+      }
+    };
+
+    void checkServerStatus();
+    const intervalId = window.setInterval(() => {
+      void checkServerStatus();
+    }, 30000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    const query = searchTerm.trim();
+    if (currentTab !== "dashboard" || !query) {
+      setQuickSearchResults([]);
+      setQuickSearchLoading(false);
+      setQuickSearchError(null);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (user.roleId !== RoleID.Admin && user.roleId !== RoleID.Doctor) {
+      setQuickSearchResults([]);
+      setQuickSearchLoading(false);
+      setQuickSearchError("layout.navbar.quickSearchUnavailable");
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setQuickSearchLoading(true);
+    setQuickSearchError(null);
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const [patientsResponse, appointmentsResponse, recordsResponse, doctorsResponse] =
+          await Promise.all([
+            apiClient.get("/patients"),
+            apiClient.get("/appointments"),
+            apiClient.get("/medical-records"),
+            user.roleId === RoleID.Admin ? apiClient.get("/doctors") : Promise.resolve(null),
+          ]);
+        if (!isActive) return;
+
+        const sources: QuickSearchSource[] = [
+          {
+            data: patientsResponse.data,
+            idField: "PatientID",
+            nameFields: ["PatientName", "FullName"],
+            searchFields: ["UserID", "Email", "Address", "BloodType"],
+            category: t("layout.sidebar.patients"),
+            tab: "patients",
+          },
+          {
+            data: appointmentsResponse.data,
+            idField: "AppointmentID",
+            nameFields: ["PatientName", "DoctorName"],
+            searchFields: [
+              "PatientID",
+              "DoctorID",
+              "PatientName",
+              "DoctorName",
+              "AppointmentDate",
+              "Status",
+            ],
+            category: t("layout.sidebar.appointments"),
+            tab: "appointments",
+          },
+          {
+            data: recordsResponse.data,
+            idField: "RecordID",
+            nameFields: ["PatientName", "Diagnosis"],
+            searchFields: [
+              "PatientID",
+              "DoctorID",
+              "DoctorName",
+              "Diagnosis",
+              "TreatmentPlan",
+            ],
+            category: t("layout.sidebar.medicalRecords"),
+            tab: "medical-records",
+          },
+        ];
+        if (doctorsResponse) {
+          sources.push({
+            data: doctorsResponse.data,
+            idField: "DoctorID",
+            nameFields: ["DoctorName", "FullName"],
+            searchFields: ["UserID", "Specialization", "Specialty"],
+            category: t("layout.sidebar.doctors"),
+            tab: "doctors",
+          });
+        }
+        setQuickSearchResults(buildQuickSearchResults(query, sources));
+      } catch (error) {
+        console.error("Failed to retrieve global search results:", error);
+        if (isActive) {
+          setQuickSearchResults([]);
+          setQuickSearchError("layout.navbar.quickSearchFailed");
+        }
+      } finally {
+        if (isActive) setQuickSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentTab, i18n.language, searchTerm, t, user.roleId]);
+
+  useEffect(() => {
+    if (!showQuickGuide) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowQuickGuide(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showQuickGuide]);
 
   // دالة تحديد مسار الصورة الشخصية حسب رتبة المستخدم
   const getAvatar = () => {
@@ -72,6 +279,15 @@ export default function Layout({
       label: t("layout.sidebar.medicalRecords"),
       icon: ClipboardList,
     },
+    ...(user.roleId === RoleID.Admin
+      ? [
+          {
+            id: "doctors",
+            label: t("layout.sidebar.doctors"),
+            icon: Stethoscope,
+          },
+        ]
+      : []),
   ];
 
   // دالة تحديد نصوص وألوان شارات الصلاحيات (Admin, Doctor, Staff) مضافاً إليها دعم الترجمة
@@ -220,6 +436,13 @@ export default function Layout({
               type="text"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
+              onFocus={() => setQuickSearchFocused(true)}
+              onBlur={() => {
+                window.setTimeout(() => setQuickSearchFocused(false), 120);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setQuickSearchFocused(false);
+              }}
               dir="auto"
               placeholder={t(
                 "layout.navbar.searchPlaceholder",
@@ -228,6 +451,47 @@ export default function Layout({
                 isRtl ? "pr-10 pl-4 text-right" : "pl-10 pr-4 text-left"
               } text-xs font-sans focus:outline-none focus:ring-2 focus:ring-primary transition-all`}
             />
+            {currentTab === "dashboard" &&
+              searchTerm.trim() &&
+              quickSearchFocused && (
+                <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-80 overflow-y-auto rounded-xl border border-outline-variant bg-white p-2 shadow-xl">
+                  {quickSearchLoading ? (
+                    <p role="status" className="px-3 py-2 text-sm text-secondary">
+                      {t("layout.navbar.quickSearchLoading")}
+                    </p>
+                  ) : quickSearchError ? (
+                    <p role="alert" className="px-3 py-2 text-sm text-rose-700">
+                      {t(quickSearchError)}
+                    </p>
+                  ) : quickSearchResults.length ? (
+                    <ul role="listbox" aria-label={t("layout.navbar.quickSearchResults")}>
+                      {quickSearchResults.map((result) => (
+                        <li key={result.key}>
+                          <button
+                            type="button"
+                            role="option"
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              setQuickSearchFocused(false);
+                              onTabChange(result.tab);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-start transition-colors hover:bg-primary/5 focus:bg-primary/5 focus:outline-none"
+                          >
+                            <span dir="auto" className="block truncate text-sm font-semibold text-on-surface">
+                              {result.label}
+                            </span>
+                            <span className="block text-xs text-secondary">{result.detail}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="px-3 py-2 text-sm text-secondary">
+                      {t("layout.navbar.quickSearchNoResults")}
+                    </p>
+                  )}
+                </div>
+              )}
           </div>
 
           {/* أزرار الإجراءات، تغيير اللغة ومؤشر الاتصال */}
@@ -244,25 +508,28 @@ export default function Layout({
               </span>
             </button>
 
-            <button
-              onClick={() => setServerOnline(!serverOnline)}
-              className={`flex items-center gap-2 px-3 py-1.5 border rounded-full transition-all focus:outline-none select-none text-xs font-bold cursor-pointer hover:bg-slate-50 ${
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex items-center gap-2 px-3 py-1.5 border rounded-full select-none text-xs font-bold ${
                 serverOnline
                   ? "bg-emerald-50 border-emerald-500/20 text-emerald-700"
-                  : "bg-amber-50 border-amber-500/20 text-amber-700"
+                  : "bg-rose-50 border-rose-500/20 text-rose-700"
               }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${serverOnline ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}
+                className={`w-2 h-2 rounded-full ${serverOnline ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}
               />
               <span>
                 {serverOnline
                   ? t("layout.navbar.statusOnline")
                   : t("layout.navbar.statusOffline")}
               </span>
-            </button>
+            </div>
 
             <button
+              type="button"
+              title={t("layout.navbar.notificationsComingSoon")}
               onClick={() =>
                 alert(
                   t("layout.navbar.noNotifications"),
@@ -277,6 +544,8 @@ export default function Layout({
             </button>
 
             <button
+              type="button"
+              title={t("layout.navbar.settingsComingSoon")}
               onClick={() =>
                 alert(
                   t("layout.navbar.settingsMaintenance"),
@@ -288,17 +557,52 @@ export default function Layout({
             </button>
 
             <button
-              onClick={() =>
-                alert(
-                  t("layout.navbar.documentationSupport"),
-                )
-              }
+              type="button"
+              title={t("layout.navbar.quickGuideTitle")}
+              aria-label={t("layout.navbar.quickGuideTitle")}
+              onClick={() => setShowQuickGuide(true)}
               className="p-2 hover:bg-slate-100 rounded-full text-slate-600 cursor-pointer transition-colors focus:outline-none"
             >
               <HelpCircle className="w-5 h-5" />
             </button>
           </div>
         </header>
+
+        {showQuickGuide && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setShowQuickGuide(false);
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="quick-guide-title"
+              dir={isRtl ? "rtl" : "ltr"}
+              className="w-full max-w-xl rounded-2xl border border-outline-variant bg-white p-6 shadow-2xl"
+            >
+              <header className="mb-5 flex items-start justify-between gap-4">
+                <h2 id="quick-guide-title" className="text-xl font-bold text-primary">
+                  {t("layout.navbar.quickGuideTitle")}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickGuide(false)}
+                  aria-label={t("layout.navbar.closeGuide")}
+                  className="shrink-0 rounded-lg p-2 text-secondary transition-colors hover:bg-slate-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </header>
+              <ul className="list-inside list-disc space-y-4 text-sm leading-7 text-on-surface">
+                <li>{t("layout.navbar.quickGuidePatientsAppointments")}</li>
+                <li>{t("layout.navbar.quickGuideMedicalBoard")}</li>
+                <li>{t("layout.navbar.quickGuidePermissions")}</li>
+              </ul>
+            </section>
+          </div>
+        )}
 
         {/* مساحة العرض المركزية والحرّة لكل صفحة على حدة */}
         <main className="flex-1 overflow-y-auto p-10 bg-[#f8f9fb]">

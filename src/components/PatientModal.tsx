@@ -8,6 +8,8 @@ import { PatientRecord } from "../types.js";
 interface PatientModalProps {
   onClose: () => void;
   onSaveSuccess: (patient: PatientRecord | null) => void;
+  patient?: PatientRecord;
+  personalInfoId?: number | string;
 }
 
 const isPatientRecord = (value: unknown): value is PatientRecord => {
@@ -47,6 +49,7 @@ const inputClassName =
   "w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary";
 
 interface PatientFormData {
+  FullName: string;
   FirstName: string;
   LastName: string;
   Username: string;
@@ -58,11 +61,12 @@ interface PatientFormData {
   BloodType: string;
 }
 
-interface PatientCreatePayload extends Omit<PatientFormData, "Gender"> {
+interface PatientCreatePayload extends Omit<PatientFormData, "FullName" | "Gender"> {
   Gender: "Male" | "Female";
 }
 
 const initialFormData: PatientFormData = {
+  FullName: "",
   FirstName: "",
   LastName: "",
   Username: "",
@@ -93,9 +97,29 @@ const patientTextFields: Array<{
 export default function PatientModal({
   onClose,
   onSaveSuccess,
+  patient,
+  personalInfoId,
 }: PatientModalProps) {
   const { t, i18n } = useTranslation();
-  const [formData, setFormData] = useState<PatientFormData>(initialFormData);
+  const isEditing = Boolean(patient);
+  const initialFullName =
+    patient?.FullName?.trim() ||
+    patient?.PatientName?.trim() ||
+    [patient?.FirstName, patient?.LastName]
+      .filter((name): name is string => typeof name === "string" && name.trim() !== "")
+      .join(" ");
+  const [formData, setFormData] = useState<PatientFormData>(() => ({
+    ...initialFormData,
+    FullName: initialFullName,
+    FirstName: patient?.FirstName ?? "",
+    LastName: patient?.LastName ?? "",
+    Email: patient?.Email ?? "",
+    DateOfBirth:
+      typeof patient?.DateOfBirth === "string" ? patient.DateOfBirth.slice(0, 10) : "",
+    Gender: patient?.Gender ?? "",
+    Address: patient?.Address ?? "",
+    BloodType: patient?.BloodType ?? "",
+  }));
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -105,13 +129,65 @@ export default function PatientModal({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const requiredEditFields = [
+      formData.FullName,
+      formData.Email,
+      formData.DateOfBirth,
+      formData.Gender,
+      formData.BloodType,
+    ];
+    const requiredCreateFields = Object.entries(formData)
+      .filter(([field]) => field !== "Address" && field !== "FullName")
+      .map(([, value]) => value);
     if (
-      Object.entries(formData).some(
-        ([field, value]) => field !== "Address" && !value.trim(),
-      ) ||
+      (isEditing && requiredEditFields.some((value) => !value.trim())) ||
+      (!isEditing && requiredCreateFields.some((value) => !value.trim())) ||
       (formData.Gender !== "Male" && formData.Gender !== "Female")
     ) {
       setErrorMsg(t("patientModal.errors.requiredFields"));
+      return;
+    }
+
+    if (isEditing && (!patient || personalInfoId === undefined)) {
+      setErrorMsg(t("patientModal.errors.updateFailed"));
+      return;
+    }
+
+    if (isEditing && patient) {
+      const fullName = formData.FullName.trim();
+      const personalInfoPayload = {
+        FullName: fullName,
+        Email: formData.Email.trim(),
+        Address: formData.Address.trim(),
+        DateOfBirth: formData.DateOfBirth,
+        Gender: formData.Gender,
+      };
+
+      setLoading(true);
+      setErrorMsg(null);
+      try {
+        await Promise.all([
+          apiClient.put(`/patients/${patient.PatientID}`, {
+            BloodType: formData.BloodType,
+          }),
+          apiClient.put(`/personal-info/${personalInfoId}`, personalInfoPayload),
+        ]);
+        onSaveSuccess({
+          ...patient,
+          FullName: fullName,
+          PatientName: fullName,
+          Email: personalInfoPayload.Email,
+          Address: personalInfoPayload.Address,
+          DateOfBirth: personalInfoPayload.DateOfBirth,
+          Gender: personalInfoPayload.Gender,
+          BloodType: formData.BloodType,
+        });
+      } catch (error) {
+        console.error("Failed to update patient:", error);
+        setErrorMsg(getApiError(error) ?? t("patientModal.errors.updateFailed"));
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -153,9 +229,11 @@ export default function PatientModal({
         <header className="flex items-center justify-between border-b border-outline-variant bg-slate-50 px-6 py-5">
           <div>
             <h2 id="patient-modal-title" className="text-xl font-bold text-primary">
-              {t("patientModal.title")}
+              {t(isEditing ? "patientModal.editTitle" : "patientModal.title")}
             </h2>
-            <p className="mt-1 text-sm text-secondary">{t("patientModal.subtitle")}</p>
+            <p className="mt-1 text-sm text-secondary">
+              {t(isEditing ? "patientModal.editSubtitle" : "patientModal.subtitle")}
+            </p>
           </div>
           <button
             type="button"
@@ -176,30 +254,55 @@ export default function PatientModal({
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {patientTextFields.map(({ name, type, minLength, maxLength, pattern }) => (
-              <div key={name} className="space-y-1.5">
+            {isEditing && (
+              <div className="space-y-1.5 sm:col-span-2">
                 <label
-                  htmlFor={`patient-${name}`}
+                  htmlFor="patient-FullName"
                   className="block text-sm font-semibold text-on-surface-variant"
                 >
-                  {t(`patientModal.form.${name}Label`)}
+                  {t("patientModal.form.fullNameLabel")}
                 </label>
                 <input
-                  id={`patient-${name}`}
-                  name={name}
-                  type={type}
-                  required={name !== "Address"}
-                  minLength={minLength}
-                  maxLength={maxLength}
-                  pattern={pattern}
-                  autoComplete={name === "Password" ? "new-password" : undefined}
-                  value={formData[name]}
-                  onChange={(event) => updateField(name, event.target.value)}
-                  placeholder={t(`patientModal.form.${name}Placeholder`)}
+                  id="patient-FullName"
+                  name="FullName"
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={formData.FullName}
+                  onChange={(event) => updateField("FullName", event.target.value)}
+                  placeholder={t("patientModal.form.fullNamePlaceholder")}
                   className={inputClassName}
                 />
               </div>
-            ))}
+            )}
+            {patientTextFields
+              .filter(({ name }) =>
+                !isEditing || name === "Email" || name === "DateOfBirth" || name === "Address",
+              )
+              .map(({ name, type, minLength, maxLength, pattern }) => (
+                <div key={name} className="space-y-1.5">
+                  <label
+                    htmlFor={`patient-${name}`}
+                    className="block text-sm font-semibold text-on-surface-variant"
+                  >
+                    {t(`patientModal.form.${name}Label`)}
+                  </label>
+                  <input
+                    id={`patient-${name}`}
+                    name={name}
+                    type={type}
+                    required={name !== "Address"}
+                    minLength={minLength}
+                    maxLength={maxLength}
+                    pattern={pattern}
+                    autoComplete={name === "Password" ? "new-password" : undefined}
+                    value={formData[name]}
+                    onChange={(event) => updateField(name, event.target.value)}
+                    placeholder={t(`patientModal.form.${name}Placeholder`)}
+                    className={inputClassName}
+                  />
+                </div>
+              ))}
 
             <div className="space-y-1.5">
               <label htmlFor="patient-Gender" className="block text-sm font-semibold text-on-surface-variant">
@@ -256,7 +359,7 @@ export default function PatientModal({
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t("patientModal.buttons.save")}
+              {t(isEditing ? "patientModal.buttons.saveChanges" : "patientModal.buttons.save")}
             </button>
           </footer>
         </form>
