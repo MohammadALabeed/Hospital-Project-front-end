@@ -94,6 +94,9 @@
       "employeesSubtitle": "Total employees registered at the hospital",
       "doctorsTitle": "Total Doctors",
       "doctorsSubtitle": "Total doctors registered at the hospital",
+      "availableDoctors": "Available now: {{count}}",
+      "availabilityLoading": "Calculating doctor availability...",
+      "availabilityUnavailable": "Doctor availability could not be calculated.",
       "loading": "Loading statistics"
     },
     "recent": {
@@ -103,6 +106,12 @@
       "drugInteractions": "Drug Interaction Cases",
       "interactionRecord": "Medical record #{{id}}",
       "warningCount": "{{count}} drug warning(s)",
+      "doctorAvailability": "Doctor availability",
+      "doctorCounts": "Available: {{available}} of {{total}} doctors",
+      "available": "Available",
+      "scheduled": "Has scheduled appointments",
+      "noDoctors": "There are no doctors to display.",
+      "doctorsLoadFailed": "Could not load doctor availability.",
       "empty": "There are no recent items to display.",
       "noInteractions": "No drug interactions have been detected.",
       "loadFailed": "Could not load the clinical activity summary.",
@@ -204,12 +213,20 @@
       "created": "Doctor account and profile created successfully."
     },
     "errors": {
-      "schemaError": "The server returned doctor data in an unexpected format.",
-      "fetchFailed": "Could not load the doctor directory.",
+      "schemaError": "The server returned unexpected doctor or appointment data.",
+      "fetchFailed": "Could not load doctors or the appointments needed to determine availability.",
       "requiredFields": "Please complete all required fields.",
-      "userCreateFailed": "Could not create the doctor's user account.",
-      "personalInfoCreateFailed": "The account was created, but personal information could not be saved. Save again to retry.",
-      "doctorCreateFailed": "The account and personal information were saved, but the doctor record could not be created. Save again to retry."
+      "usernameInvalid": "Username must be 3 to 50 English letters or digits.",
+      "passwordTooShort": "Password must contain at least 8 characters.",
+      "fullNameInvalid": "Full name is required and must be at most 100 characters.",
+      "emailInvalid": "Enter a valid email address.",
+      "dateOfBirthInvalid": "Enter a valid date of birth.",
+      "genderInvalid": "Select a valid gender.",
+      "specializationInvalid": "Specialization is required and must be at most 100 characters.",
+      "clinicNumberInvalid": "Clinic number is required and must be at most 20 characters.",
+      "userCreateFailed": "Could not create the doctor account. Check that the username is unused and the account details are valid.",
+      "personalInfoCreateFailed": "Could not save personal information. Check the name, email, date of birth, and gender.",
+      "doctorCreateFailed": "Could not save the doctor record. Check the specialization and clinic number."
     },
     "form": {
       "title": "Add New Doctor",
@@ -243,8 +260,14 @@
       "retry": "Retry",
       "empty": "No doctors are registered.",
       "noSearchResults": "No doctors matched: {{term}}",
+      "filterLabel": "Filter doctors",
+      "filterPlaceholder": "Search by name, specialization, or clinic number...",
       "name": "Full name",
       "specialization": "Specialization",
+      "clinicNumber": "Clinic number",
+      "availability": "Availability",
+      "available": "Available",
+      "scheduled": "Has scheduled appointments",
       "email": "Email",
       "address": "Address",
       "notProvided": "Not provided"

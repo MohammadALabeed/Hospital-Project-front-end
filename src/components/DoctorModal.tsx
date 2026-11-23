@@ -21,6 +21,36 @@ interface DoctorFormData {
   ClinicNumber: string;
 }
 
+const getValidationError = (formData: DoctorFormData): string | null => {
+  const username = formData.Username.trim();
+  if (username.length < 3 || username.length > 50 || !/^[A-Za-z0-9]+$/.test(username)) {
+    return "doctors.errors.usernameInvalid";
+  }
+  if (formData.Password.length < 8) return "doctors.errors.passwordTooShort";
+
+  const fullName = formData.FullName.trim();
+  if (!fullName || fullName.length > 100) return "doctors.errors.fullNameInvalid";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email.trim())) {
+    return "doctors.errors.emailInvalid";
+  }
+  if (!formData.DateOfBirth || Number.isNaN(Date.parse(formData.DateOfBirth))) {
+    return "doctors.errors.dateOfBirthInvalid";
+  }
+  if (formData.Gender !== "Male" && formData.Gender !== "Female") {
+    return "doctors.errors.genderInvalid";
+  }
+
+  const specialization = formData.Specialization.trim();
+  if (!specialization || specialization.length > 100) {
+    return "doctors.errors.specializationInvalid";
+  }
+  const clinicNumber = formData.ClinicNumber.trim();
+  if (!clinicNumber || clinicNumber.length > 20) {
+    return "doctors.errors.clinicNumberInvalid";
+  }
+  return null;
+};
+
 const initialFormData: DoctorFormData = {
   Username: "",
   Password: "",
@@ -63,8 +93,9 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!formData.Gender) {
-      setErrorMsg(t("doctors.errors.requiredFields"));
+    const validationError = getValidationError(formData);
+    if (validationError) {
+      setErrorMsg(t(validationError));
       return;
     }
 
@@ -141,7 +172,7 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
           </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-5 p-6">
+        <form noValidate onSubmit={handleSubmit} className="space-y-5 p-6">
           {errorMsg && (
             <div role="alert" className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-50 p-3 text-sm font-semibold text-rose-800">
               <ShieldAlert className="h-5 w-5 shrink-0" />
@@ -154,8 +185,8 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
               ["Username", "text", 50],
               ["Password", "password", undefined],
               ["FullName", "text", 100],
-              ["Email", "email", 100],
-              ["Address", "text", 255],
+              ["Email", "email", undefined],
+              ["Address", "text", undefined],
               ["DateOfBirth", "date", undefined],
               ["Specialization", "text", 100],
               ["ClinicNumber", "text", 20],
@@ -172,9 +203,13 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
                   name={field}
                   type={type}
                   required={field !== "Address"}
-                  minLength={field === "Username" ? 3 : field === "Password" ? 8 : undefined}
                   maxLength={maxLength}
                   pattern={field === "Username" ? "[A-Za-z0-9]+" : undefined}
+                  disabled={
+                    loading ||
+                    (createdUserId !== null &&
+                      (field === "Username" || field === "Password"))
+                  }
                   autoComplete={
                     field === "Password"
                       ? "new-password"
@@ -197,6 +232,7 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
               <select
                 id="doctor-Gender"
                 required
+                disabled={loading}
                 value={formData.Gender}
                 onChange={(event) => {
                   if (event.target.value === "Male" || event.target.value === "Female") {

@@ -9,10 +9,12 @@ import {
   CalendarDays,
   FileText,
   AlertTriangle,
+  Stethoscope,
 } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
+import { getUnavailableDoctorIds } from "../doctorAvailability.js";
 
 // استيراد تيبات التحقق من البيانات الخاصة بالجلسة
 import { RoleID, UserSession } from "../types.js";
@@ -31,9 +33,30 @@ interface DashboardStats {
 
 interface DashboardAppointment {
   AppointmentID: number | string;
+  DoctorID: number | string;
   PatientName?: string | null;
   AppointmentDate: string;
   Status: string;
+}
+
+interface DashboardDoctor {
+  DoctorID: number | string;
+  UserID: number | string;
+  DoctorName?: string | null;
+  Specialization?: string | null;
+  Specialty?: string | null;
+}
+
+interface DashboardPersonalInfo {
+  UserID: number | string;
+  FullName?: string | null;
+}
+
+interface DoctorAvailabilityEntry {
+  doctorId: number | string;
+  fullName: string;
+  specialization: string;
+  isAvailable: boolean;
 }
 
 interface DashboardMedicalRecord {
@@ -83,11 +106,38 @@ const isDashboardAppointment = (value: unknown): value is DashboardAppointment =
   return (
     (typeof appointment.AppointmentID === "number" ||
       typeof appointment.AppointmentID === "string") &&
+    (typeof appointment.DoctorID === "number" ||
+      typeof appointment.DoctorID === "string") &&
     typeof appointment.AppointmentDate === "string" &&
     typeof appointment.Status === "string" &&
     (appointment.PatientName === undefined ||
       typeof appointment.PatientName === "string" ||
       appointment.PatientName === null)
+  );
+};
+
+const isDashboardDoctor = (value: unknown): value is DashboardDoctor => {
+  if (!value || typeof value !== "object") return false;
+  const doctor = value as Record<string, unknown>;
+  return (
+    (typeof doctor.DoctorID === "number" || typeof doctor.DoctorID === "string") &&
+    (typeof doctor.UserID === "number" || typeof doctor.UserID === "string") &&
+    (typeof (doctor.Specialization ?? doctor.Specialty) === "string") &&
+    (doctor.DoctorName === undefined ||
+      doctor.DoctorName === null ||
+      typeof doctor.DoctorName === "string")
+  );
+};
+
+const isDashboardPersonalInfo = (value: unknown): value is DashboardPersonalInfo => {
+  if (!value || typeof value !== "object") return false;
+  const personalInfo = value as Record<string, unknown>;
+  return (
+    (typeof personalInfo.UserID === "number" ||
+      typeof personalInfo.UserID === "string") &&
+    (personalInfo.FullName === undefined ||
+      personalInfo.FullName === null ||
+      typeof personalInfo.FullName === "string")
   );
 };
 
@@ -154,6 +204,13 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
   });
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [doctorAvailability, setDoctorAvailability] = useState<
+    DoctorAvailabilityEntry[]
+  >([]);
+  const [doctorAvailabilityLoading, setDoctorAvailabilityLoading] = useState(true);
+  const [doctorAvailabilityError, setDoctorAvailabilityError] = useState<
+    string | null
+  >(null);
   const canViewClinicalSummary =
     user.roleId === RoleID.Admin || user.roleId === RoleID.Doctor;
 
@@ -187,6 +244,7 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
   useEffect(() => {
     if (!canViewClinicalSummary) {
       setSummaryLoading(false);
+      setDoctorAvailabilityLoading(false);
       return;
     }
 
@@ -194,6 +252,8 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
     const fetchSummary = async () => {
       setSummaryLoading(true);
       setSummaryError(null);
+      setDoctorAvailabilityLoading(true);
+      setDoctorAvailabilityError(null);
       try {
         const [appointmentsResponse, recordsResponse, reportsResponse] =
           await Promise.all([
@@ -225,6 +285,54 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
               Date.parse(second.AppointmentDate) - Date.parse(first.AppointmentDate),
           )
           .slice(0, 3);
+        const fetchDoctorAvailability = async () => {
+          try {
+            const [doctorsResponse, personalInfoResponse] = await Promise.all([
+              apiClient.get("/doctors"),
+              apiClient.get("/personal-info"),
+            ]);
+            const doctors = parseArray(doctorsResponse.data, isDashboardDoctor);
+            const personalInfo = parseArray(
+              personalInfoResponse.data,
+              isDashboardPersonalInfo,
+            );
+            if (!doctors || !personalInfo) {
+              throw new Error("The server returned an unexpected doctor directory format.");
+            }
+
+            const personalInfoByUserId = new Map(
+              personalInfo.map((entry) => [String(entry.UserID), entry]),
+            );
+            const unavailableDoctorIds =
+              getUnavailableDoctorIds(appointmentRecords);
+            const entries = doctors
+              .map((doctor) => ({
+                doctorId: doctor.DoctorID,
+                fullName:
+                  personalInfoByUserId
+                    .get(String(doctor.UserID))
+                    ?.FullName?.trim() ||
+                  doctor.DoctorName?.trim() ||
+                  "",
+                specialization:
+                  doctor.Specialization ?? doctor.Specialty ?? "",
+                isAvailable: !unavailableDoctorIds.has(String(doctor.DoctorID)),
+              }))
+              .sort(
+                (firstDoctor, secondDoctor) =>
+                  Number(firstDoctor.doctorId) - Number(secondDoctor.doctorId),
+              );
+            if (isMounted) setDoctorAvailability(entries);
+          } catch (error) {
+            console.error("Failed to retrieve doctor availability:", error);
+            if (isMounted) {
+              setDoctorAvailabilityError("overview.recent.doctorsLoadFailed");
+            }
+          } finally {
+            if (isMounted) setDoctorAvailabilityLoading(false);
+          }
+        };
+
         const medicalRecords = [...medicalRecordEntries]
           .sort(
             (first, second) => Number(second.RecordID) - Number(first.RecordID),
@@ -245,10 +353,15 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
 
         if (isMounted) {
           setSummary({ appointments, medicalRecords, drugInteractions });
+          void fetchDoctorAvailability();
         }
       } catch (error) {
         console.error("Failed to retrieve dashboard summaries:", error);
-        if (isMounted) setSummaryError("overview.recent.loadFailed");
+        if (isMounted) {
+          setSummaryError("overview.recent.loadFailed");
+          setDoctorAvailabilityError("overview.recent.doctorsLoadFailed");
+          setDoctorAvailabilityLoading(false);
+        }
       } finally {
         if (isMounted) setSummaryLoading(false);
       }
@@ -297,6 +410,10 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
       timeStyle: "short",
     }).format(parsedDate);
   };
+
+  const availableDoctorCount = doctorAvailability.filter(
+    (doctor) => doctor.isAvailable,
+  ).length;
 
   return (
     // تحديد اتجاه اللوحة (RTL للعربي و LTR للإنجليزي) مع تأثير حركي عند الدخول
@@ -355,55 +472,65 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
       </div>
 
       {/* 3. قسم بطاقات الإحصائيات  */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
-          <div className="p-4.5 bg-sky-50 text-sky-600 rounded-3xl shrink-0">
-            <Users className="w-8 h-8" />
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
+            <div className="p-4.5 bg-sky-50 text-sky-600 rounded-3xl shrink-0">
+              <Users className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
+                {t("overview.stats.patientsTitle")}
+              </p>
+              <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
+                {renderStatCount(stats.totalPatients)}
+              </h4>
+              <p className="text-base text-slate-500 mt-3 leading-relaxed">
+                {t("overview.stats.patientsSubtitle")}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.patientsTitle")}
-            </p>
-            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
-              {renderStatCount(stats.totalPatients)}
-            </h4>
-            <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t("overview.stats.patientsSubtitle")}
-            </p>
-          </div>
-        </div>
 
-        <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
-          <div className="p-4.5 bg-amber-50 text-amber-600 rounded-3xl shrink-0">
-            <Activity className="w-8 h-8" />
+          <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
+            <div className="p-4.5 bg-amber-50 text-amber-600 rounded-3xl shrink-0">
+              <Activity className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
+                {t("overview.stats.employeesTitle")}
+              </p>
+              <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
+                {renderStatCount(stats.totalEmployees)}
+              </h4>
+              <p className="text-base text-slate-500 mt-3 leading-relaxed">
+                {t("overview.stats.employeesSubtitle")}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.employeesTitle")}
-            </p>
-            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
-              {renderStatCount(stats.totalEmployees)}
-            </h4>
-            <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t("overview.stats.employeesSubtitle")}
-            </p>
-          </div>
-        </div>
 
-        <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
-          <div className="p-4.5 bg-emerald-50 text-emerald-600 rounded-3xl shrink-0">
-            <HeartPulse className="w-8 h-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
-              {t("overview.stats.doctorsTitle")}
-            </p>
-            <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
-              {renderStatCount(stats.totalDoctors)}
-            </h4>
-            <p className="text-base text-slate-500 mt-3 leading-relaxed">
-              {t("overview.stats.doctorsSubtitle")}
-            </p>
+          <div className="bg-white p-8 rounded-4xl border border-outline-variant shadow-lg flex items-start gap-5">
+            <div className="p-4.5 bg-emerald-50 text-emerald-600 rounded-3xl shrink-0">
+              <HeartPulse className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-slate-400 text-[12px] font-semibold uppercase tracking-[0.24em] leading-none">
+                {t("overview.stats.doctorsTitle")}
+              </p>
+              <h4 className="text-4xl font-extrabold mt-3 text-on-surface">
+                {renderStatCount(stats.totalDoctors)}
+              </h4>
+              <p className="text-base text-slate-500 mt-3 leading-relaxed">
+                {canViewClinicalSummary
+                  ? doctorAvailabilityLoading
+                    ? t("overview.stats.availabilityLoading")
+                    : doctorAvailabilityError
+                      ? t("overview.stats.availabilityUnavailable")
+                      : t("overview.stats.availableDoctors", {
+                          count: availableDoctorCount,
+                        })
+                  : t("overview.stats.doctorsSubtitle")}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -417,7 +544,7 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
                 {t(summaryError)}
               </p>
             )}
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
               <article className="rounded-2xl border border-outline-variant bg-white p-6 shadow-sm">
                 <h4 className="mb-4 flex items-center gap-2 font-bold text-on-surface">
                   <CalendarDays className="h-5 w-5 text-primary" />
@@ -499,6 +626,74 @@ export default function Overview({ user, onNavigate }: OverviewProps) {
                   </ul>
                 ) : (
                   <p className="text-sm text-secondary">{t("overview.recent.noInteractions")}</p>
+                )}
+              </article>
+
+              <article className="rounded-2xl border border-outline-variant bg-white p-6 shadow-sm">
+                <h4 className="mb-2 flex items-center gap-2 font-bold text-on-surface">
+                  <Stethoscope className="h-5 w-5 text-primary" />
+                  {t("overview.recent.doctorAvailability")}
+                </h4>
+                {doctorAvailabilityLoading ? (
+                  <Loader2
+                    className="h-5 w-5 animate-spin text-primary"
+                    aria-label={t("overview.stats.loading")}
+                  />
+                ) : doctorAvailabilityError ? (
+                  <p role="alert" className="text-sm text-rose-700">
+                    {t(doctorAvailabilityError)}
+                  </p>
+                ) : (
+                  <>
+                    <p className="mb-4 text-sm font-semibold text-secondary">
+                      {t("overview.recent.doctorCounts", {
+                        available: availableDoctorCount,
+                        total: doctorAvailability.length,
+                      })}
+                    </p>
+                    {doctorAvailability.length ? (
+                      <ul className="space-y-3">
+                        {doctorAvailability.slice(0, 4).map((doctor) => (
+                          <li
+                            key={String(doctor.doctorId)}
+                            className="border-t border-outline-variant pt-3 first:border-0 first:pt-0"
+                          >
+                            <p
+                              dir="auto"
+                              className="font-semibold text-on-surface"
+                            >
+                              {doctor.fullName || `#${doctor.doctorId}`}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                              <span
+                                dir="auto"
+                                className="text-xs text-secondary"
+                              >
+                                {doctor.specialization}
+                              </span>
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                                  doctor.isAvailable
+                                    ? "bg-emerald-50 text-emerald-800"
+                                    : "bg-amber-50 text-amber-800"
+                                }`}
+                              >
+                                {t(
+                                  doctor.isAvailable
+                                    ? "overview.recent.available"
+                                    : "overview.recent.scheduled",
+                                )}
+                              </span>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-secondary">
+                        {t("overview.recent.noDoctors")}
+                      </p>
+                    )}
+                  </>
                 )}
               </article>
             </div>

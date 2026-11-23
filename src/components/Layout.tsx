@@ -213,7 +213,12 @@ export default function Layout({
             data: doctorsResponse.data,
             idField: "DoctorID",
             nameFields: ["DoctorName", "FullName"],
-            searchFields: ["UserID", "Specialization", "Specialty"],
+            searchFields: [
+              "UserID",
+              "Specialization",
+              "Specialty",
+              "ClinicNumber",
+            ],
             category: t("layout.sidebar.doctors"),
             tab: "doctors",
           });
