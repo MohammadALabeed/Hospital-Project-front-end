@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { isAxiosError } from "axios";
 import { Loader2, Save, ShieldAlert, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../api.js";
@@ -139,7 +140,16 @@ export default function DoctorModal({ onClose, onCreated }: DoctorModalProps) {
       onCreated();
     } catch (error) {
       console.error(`Failed to create doctor during ${failedStep} step:`, error);
-      setErrorMsg(t(`doctors.errors.${failedStep}CreateFailed`));
+      const serverMessage = isAxiosError(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : null;
+      if (typeof serverMessage === "string" && serverMessage.trim()) {
+        setErrorMsg(serverMessage);
+      } else if (error instanceof Error && error.message) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg(t(`doctors.errors.${failedStep}CreateFailed`));
+      }
     } finally {
       setLoading(false);
     }
